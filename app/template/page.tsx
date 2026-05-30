@@ -15,10 +15,22 @@ type TemplateItem = {
   rules: string;
 };
 
+type ParsedDiscordTemplate = {
+  name: string;
+  categories: string[];
+  channels: string[];
+  roles: string[];
+  bots: string[];
+};
+
 type FormState = {
   name: string;
   tags: string[];
   link: string;
+  categories: string;
+  channels: string;
+  roles: string;
+  bots: string;
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -50,35 +62,35 @@ const initialTemplates: TemplateItem[] = [
   {
     id: 1,
     name: "발로란트 내전 서버",
-    description: "",
+    description: "게임 카테고리",
     tags: ["발로란트", "게임", "내전", "파티모집"],
     category: "게임",
     link: "https://discord.com/developers/docs/resources/guild-template",
     channels: "#공지, #서버규칙, #자기소개, #파티모집, #내전신청, #클립자랑, #자유채팅, #음성대기방",
     roles: "서버장, 관리자, 내전관리자, 성인, 미자, 아이언~브론즈, 실버~골드, 플래~다이아, 초월자 이상",
-    rules: "욕설, 패드립, 성희롱 금지 / 파티 모집 채널 목적에 맞게 사용 / 내전 중 고의 트롤, 탈주, 소통 차단 제재",
+    rules: "Carl-bot, Ticket Tool, Statbot",
   },
   {
     id: 2,
     name: "롤 듀오·내전 서버",
-    description: "",
+    description: "게임 카테고리",
     tags: ["롤", "게임", "파티모집", "내전"],
     category: "게임",
     link: "https://discord.com/developers/docs/resources/guild-template",
     channels: "#공지, #서버규칙, #자기소개, #듀오모집, #자랭모집, #내전신청, #자유채팅, #음성대기방",
     roles: "서버장, 관리자, 탑, 정글, 미드, 원딜, 서폿, 브실골, 플다에, 마스터 이상",
-    rules: "랭크 비하 금지 / 듀오 모집 시 티어와 포지션 작성 / 내전 중 고의 트롤과 탈주 제재",
+    rules: "Carl-bot, MEE6, Statbot",
   },
   {
     id: 3,
     name: "친목 커뮤니티 서버",
-    description: "",
+    description: "커뮤니티 카테고리",
     tags: ["친목", "커뮤니티", "수다"],
     category: "친목",
     link: "https://discord.com/developers/docs/resources/guild-template",
     channels: "#공지, #규칙, #자기소개, #자유수다, #사진공유, #게임모집, #질문방, #음성채팅",
     roles: "서버장, 관리자, 인증멤버, 신입, 활동멤버, 부스터",
-    rules: "타인을 불쾌하게 하는 발언 금지 / 개인정보 공유 강요 금지 / 도배, 광고, 분쟁 유도 제재",
+    rules: "Carl-bot, Dyno, Ticket Tool",
   },
 ];
 
@@ -86,6 +98,10 @@ const emptyForm: FormState = {
   name: "",
   tags: [],
   link: "",
+  categories: "",
+  channels: "",
+  roles: "",
+  bots: "",
 };
 
 function normalizeTemplate(template: TemplateItem): TemplateItem {
@@ -129,6 +145,7 @@ export default function TemplatePage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isParsing, setIsParsing] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
@@ -158,7 +175,7 @@ export default function TemplatePage() {
     if (!keyword) return templates;
 
     return templates.filter((template) => {
-      const target = [template.name, template.description, template.tags.join(" ")]
+      const target = [template.name, template.description, template.channels, template.roles, template.rules, template.tags.join(" ")]
         .join(" ")
         .toLowerCase();
 
@@ -185,6 +202,37 @@ export default function TemplatePage() {
     setEditingId(null);
   }
 
+  async function parseTemplateLink() {
+    if (!form.link.trim()) {
+      alert("서버 템플릿 링크를 먼저 입력해주세요.");
+      return;
+    }
+
+    setIsParsing(true);
+
+    try {
+      const response = await fetch(`/api/discord-template?template=${encodeURIComponent(form.link)}`);
+      const data = (await response.json()) as ParsedDiscordTemplate | { error: string };
+
+      if (!response.ok || "error" in data) {
+        throw new Error("error" in data ? data.error : "템플릿 정보를 가져오지 못했습니다.");
+      }
+
+      setForm((prev) => ({
+        ...prev,
+        name: prev.name.trim() || data.name,
+        categories: data.categories.join(", "),
+        channels: data.channels.join(", "),
+        roles: data.roles.join(", "),
+        bots: data.bots.length ? data.bots.join(", ") : "감지된 봇 없음",
+      }));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "템플릿 정보를 가져오지 못했습니다.");
+    } finally {
+      setIsParsing(false);
+    }
+  }
+
   async function saveTemplate() {
     if (!form.name.trim()) {
       alert("템플릿 이름을 입력해주세요.");
@@ -193,13 +241,13 @@ export default function TemplatePage() {
 
     const payload = {
       name: form.name.trim(),
-      description: "",
+      description: form.categories.trim(),
       tags: form.tags,
       category: form.tags[0] || "기타",
       link: form.link.trim() || "https://discord.com",
-      channels: "",
-      roles: "",
-      rules: "",
+      channels: form.channels.trim(),
+      roles: form.roles.trim(),
+      rules: form.bots.trim(),
     };
 
     try {
@@ -237,6 +285,10 @@ export default function TemplatePage() {
       name: template.name,
       tags: template.tags,
       link: template.link,
+      categories: template.description,
+      channels: template.channels,
+      roles: template.roles,
+      bots: template.rules,
     });
   }
 
@@ -268,7 +320,7 @@ export default function TemplatePage() {
             디스코드 서버 템플릿
           </h1>
           <p className="mt-4 max-w-2xl text-zinc-400">
-            템플릿 이름, 태그, 링크만 입력하는 간단한 구조로 정리했습니다.
+            템플릿 링크를 넣고 정보를 가져오면 카테고리, 채널, 역할, 사용된 봇을 자동으로 정리합니다.
           </p>
 
           {errorMessage && (
@@ -291,7 +343,7 @@ export default function TemplatePage() {
               {editingId ? "템플릿 수정" : "템플릿 추가"}
             </h2>
             <p className="mt-2 text-sm text-zinc-500">
-              분류는 없애고 태그만 사용합니다.
+              링크를 넣고 자동 가져오기를 누른 뒤 추가하면 됩니다.
             </p>
 
             <div className="mt-5 grid gap-3">
@@ -307,6 +359,34 @@ export default function TemplatePage() {
                 </div>
               </div>
               <input className="rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="서버 템플릿 링크" value={form.link} onChange={(event) => updateForm("link", event.target.value)} />
+              <button onClick={parseTemplateLink} disabled={isParsing} className="rounded-xl border border-indigo-400/40 bg-indigo-500/10 px-4 py-3 font-semibold text-indigo-100 hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60">
+                {isParsing ? "가져오는 중" : "템플릿 정보 가져오기"}
+              </button>
+
+              {(form.categories || form.channels || form.roles || form.bots) && (
+                <div className="overflow-hidden rounded-xl border border-white/10 text-xs text-zinc-300">
+                  <table className="w-full text-left">
+                    <tbody>
+                      <tr className="border-b border-white/10">
+                        <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">카테고리</th>
+                        <td className="px-3 py-2">{form.categories || "없음"}</td>
+                      </tr>
+                      <tr className="border-b border-white/10">
+                        <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">채널</th>
+                        <td className="px-3 py-2">{form.channels || "없음"}</td>
+                      </tr>
+                      <tr className="border-b border-white/10">
+                        <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">역할</th>
+                        <td className="px-3 py-2">{form.roles || "없음"}</td>
+                      </tr>
+                      <tr>
+                        <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">사용 봇</th>
+                        <td className="px-3 py-2">{form.bots || "없음"}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
 
             <div className="mt-4 flex gap-2">
@@ -344,32 +424,28 @@ export default function TemplatePage() {
                 </div>
 
                 <div className="space-y-4 p-5 text-sm leading-6 text-zinc-300">
-                  {(template.channels || template.roles || template.rules) && (
-                    <div className="overflow-hidden rounded-xl border border-white/10">
-                      <table className="w-full text-left text-xs">
-                        <tbody>
-                          {template.channels && (
-                            <tr className="border-b border-white/10">
-                              <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">채널</th>
-                              <td className="px-3 py-2">{template.channels}</td>
-                            </tr>
-                          )}
-                          {template.roles && (
-                            <tr className="border-b border-white/10">
-                              <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">역할</th>
-                              <td className="px-3 py-2">{template.roles}</td>
-                            </tr>
-                          )}
-                          {template.rules && (
-                            <tr>
-                              <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">규칙</th>
-                              <td className="px-3 py-2">{template.rules}</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
+                  <div className="overflow-hidden rounded-xl border border-white/10">
+                    <table className="w-full text-left text-xs">
+                      <tbody>
+                        <tr className="border-b border-white/10">
+                          <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">카테고리</th>
+                          <td className="px-3 py-2">{template.description || "없음"}</td>
+                        </tr>
+                        <tr className="border-b border-white/10">
+                          <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">채널</th>
+                          <td className="px-3 py-2">{template.channels || "없음"}</td>
+                        </tr>
+                        <tr className="border-b border-white/10">
+                          <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">역할</th>
+                          <td className="px-3 py-2">{template.roles || "없음"}</td>
+                        </tr>
+                        <tr>
+                          <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">사용 봇</th>
+                          <td className="px-3 py-2">{template.rules || "없음"}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
 
                   <div className="flex gap-2 pt-2">
                     <button onClick={() => editTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5">
