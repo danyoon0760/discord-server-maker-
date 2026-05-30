@@ -46,8 +46,24 @@ const emptyForm: FormState = {
 };
 
 const oldTagValues = new Set([
-  "발로란트", "롤", "게임", "친목", "커뮤니티", "내전", "파티모집", "수다",
-  "음성", "학급", "공부", "팬서버", "운영", "인증", "성인", "미자", "소규모", "기타",
+  "발로란트",
+  "롤",
+  "게임",
+  "친목",
+  "커뮤니티",
+  "내전",
+  "파티모집",
+  "수다",
+  "음성",
+  "학급",
+  "공부",
+  "팬서버",
+  "운영",
+  "인증",
+  "성인",
+  "미자",
+  "소규모",
+  "기타",
 ]);
 
 function normalizeTemplate(template: TemplateItem): TemplateItem {
@@ -125,6 +141,7 @@ async function supabaseRequest<T>(path: string, options: RequestInit = {}) {
       apikey: supabaseAnonKey,
       Authorization: `Bearer ${supabaseAnonKey}`,
       "Content-Type": "application/json",
+      Prefer: "return=representation",
       ...options.headers,
     },
   });
@@ -271,13 +288,18 @@ export default function TemplatePage() {
   }
 
   async function saveTemplate() {
-    if (!adminPassword) {
-      alert("관리자 로그인이 필요합니다.");
+    if (!form.name.trim()) {
+      alert("템플릿 이름을 입력해주세요.");
       return;
     }
 
-    if (!form.name.trim()) {
-      alert("템플릿 이름을 입력해주세요.");
+    if (!form.link.trim()) {
+      alert("서버 템플릿 링크를 입력해주세요.");
+      return;
+    }
+
+    if (!form.categories.trim() && !form.channels.trim() && !form.roles.trim()) {
+      alert("템플릿 정보 가져오기를 먼저 눌러주세요.");
       return;
     }
 
@@ -286,7 +308,7 @@ export default function TemplatePage() {
       description: form.categories.trim(),
       tags: [],
       category: form.summary.trim(),
-      link: form.link.trim() || "https://discord.com",
+      link: form.link.trim(),
       channels: form.channels.trim(),
       roles: form.roles.trim(),
       rules: "",
@@ -296,12 +318,17 @@ export default function TemplatePage() {
 
     try {
       if (editingId) {
+        if (!adminPassword) {
+          alert("수정은 관리자 로그인이 필요합니다.");
+          return;
+        }
+
         await adminRequest("/api/admin/templates", adminPassword, {
           method: "PATCH",
           body: JSON.stringify({ id: editingId, ...payload }),
         });
       } else {
-        await adminRequest("/api/admin/templates", adminPassword, {
+        await supabaseRequest<TemplateItem[]>("server_templates", {
           method: "POST",
           body: JSON.stringify(payload),
         });
@@ -361,9 +388,7 @@ export default function TemplatePage() {
               <h1 className="mt-3 text-4xl font-black md:text-5xl">디스코드 서버 템플릿</h1>
               <p className="mt-4 max-w-2xl text-zinc-400">템플릿 링크를 넣으면 카테고리, 채널, 역할을 자동으로 요약합니다.</p>
             </div>
-            {isAdmin && (
-              <button onClick={openCreateForm} className="rounded-2xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-400">템플릿 추가</button>
-            )}
+            <button onClick={openCreateForm} className="rounded-2xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-400">템플릿 추가</button>
           </div>
 
           {errorMessage && <p className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{errorMessage}</p>}
@@ -400,7 +425,7 @@ export default function TemplatePage() {
         </div>
       </section>
 
-      {isFormOpen && isAdmin && (
+      {isFormOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
@@ -409,7 +434,7 @@ export default function TemplatePage() {
             </div>
             <div className="mt-6 grid gap-3">
               <input className="rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="템플릿 이름" value={form.name} onChange={(event) => updateForm("name", event.target.value)} />
-              <textarea className="min-h-24 rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="간단 설명" value={form.summary} onChange={(event) => updateForm("summary", event.target.value)} />
+              <textarea className="min-h-24 rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="설명" value={form.summary} onChange={(event) => updateForm("summary", event.target.value)} />
               <input className="rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="서버 템플릿 링크" value={form.link} onChange={(event) => updateForm("link", event.target.value)} />
               <button onClick={parseTemplateLink} disabled={isParsing} className="rounded-xl border border-indigo-400/40 bg-indigo-500/10 px-4 py-3 font-semibold text-indigo-100 hover:bg-indigo-500/20 disabled:cursor-not-allowed disabled:opacity-60">{isParsing ? "가져오는 중" : "템플릿 정보 가져오기"}</button>
               {(form.categories || form.channels || form.roles) && <div className="grid gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-zinc-300"><p><span className="font-bold text-white">카테고리</span> {previewList(form.categories, 2)}</p><p><span className="font-bold text-white">채널</span> {countText(form.channels, "채널")}</p><p><span className="font-bold text-white">역할</span> {countText(form.roles, "역할")}</p></div>}
