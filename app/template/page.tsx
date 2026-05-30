@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type TemplateItem = {
   id: number;
@@ -12,7 +12,7 @@ type TemplateItem = {
   link: string;
   channels: string;
   roles: string;
-  rules: string;
+  rules?: string;
 };
 
 type ParsedDiscordTemplate = {
@@ -20,7 +20,6 @@ type ParsedDiscordTemplate = {
   categories: string[];
   channels: string[];
   roles: string[];
-  bots: string[];
 };
 
 type FormState = {
@@ -30,7 +29,6 @@ type FormState = {
   categories: string;
   channels: string;
   roles: string;
-  bots: string;
 };
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -52,46 +50,9 @@ const templateTags = [
   "팬서버",
   "운영",
   "인증",
-  "봇",
   "성인",
   "미자",
   "소규모",
-];
-
-const initialTemplates: TemplateItem[] = [
-  {
-    id: 1,
-    name: "발로란트 내전 서버",
-    description: "게임 카테고리",
-    tags: ["발로란트", "게임", "내전", "파티모집"],
-    category: "게임",
-    link: "https://discord.com/developers/docs/resources/guild-template",
-    channels: "#공지\n#서버규칙\n#자기소개\n#파티모집\n#내전신청\n#클립자랑\n#자유채팅\n#음성대기방",
-    roles: "서버장\n관리자\n내전관리자\n성인\n미자\n아이언~브론즈\n실버~골드\n플래~다이아\n초월자 이상",
-    rules: "Carl-bot\nTicket Tool\nStatbot",
-  },
-  {
-    id: 2,
-    name: "롤 듀오·내전 서버",
-    description: "게임 카테고리",
-    tags: ["롤", "게임", "파티모집", "내전"],
-    category: "게임",
-    link: "https://discord.com/developers/docs/resources/guild-template",
-    channels: "#공지\n#서버규칙\n#자기소개\n#듀오모집\n#자랭모집\n#내전신청\n#자유채팅\n#음성대기방",
-    roles: "서버장\n관리자\n탑\n정글\n미드\n원딜\n서폿\n브실골\n플다에\n마스터 이상",
-    rules: "Carl-bot\nMEE6\nStatbot",
-  },
-  {
-    id: 3,
-    name: "친목 커뮤니티 서버",
-    description: "커뮤니티 카테고리",
-    tags: ["친목", "커뮤니티", "수다"],
-    category: "친목",
-    link: "https://discord.com/developers/docs/resources/guild-template",
-    channels: "#공지\n#규칙\n#자기소개\n#자유수다\n#사진공유\n#게임모집\n#질문방\n#음성채팅",
-    roles: "서버장\n관리자\n인증멤버\n신입\n활동멤버\n부스터",
-    rules: "Carl-bot\nDyno\nTicket Tool",
-  },
 ];
 
 const emptyForm: FormState = {
@@ -101,16 +62,23 @@ const emptyForm: FormState = {
   categories: "",
   channels: "",
   roles: "",
-  bots: "",
 };
 
+function uniqueTags(tags: string[]) {
+  return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
+}
+
 function normalizeTemplate(template: TemplateItem): TemplateItem {
-  const tags = Array.isArray(template.tags) ? template.tags : [];
+  const tags = uniqueTags(Array.isArray(template.tags) ? template.tags : []);
   const categoryTag = template.category && !tags.includes(template.category) ? [template.category] : [];
 
   return {
     ...template,
-    tags: [...categoryTag, ...tags],
+    tags: uniqueTags([...categoryTag, ...tags]),
+    description: template.description || "",
+    channels: template.channels || "",
+    roles: template.roles || "",
+    link: template.link || "https://discord.com",
   };
 }
 
@@ -122,11 +90,10 @@ function splitList(value: string) {
   return value
     .split(/\n|,(?=\s*[^#🔊📢🧵])/g)
     .map((item) => item.trim())
-    .filter(Boolean)
-    .filter((item) => item !== "감지된 봇 없음");
+    .filter(Boolean);
 }
 
-function previewList(value: string, max = 6) {
+function previewList(value: string, max = 2) {
   const items = splitList(value);
   if (items.length === 0) return "없음";
 
@@ -136,16 +103,15 @@ function previewList(value: string, max = 6) {
 }
 
 function countText(value: string, label: string) {
-  const count = splitList(value).length;
-  return `${label} ${count}개`;
+  return `${label} ${splitList(value).length}개`;
 }
 
 function DetailList({ title, value }: { title: string; value: string }) {
   const items = splitList(value);
 
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-      <p className="mb-2 text-xs font-bold text-white">{title}</p>
+    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
+      <p className="mb-3 text-sm font-bold text-white">{title}</p>
       {items.length ? (
         <div className="flex flex-wrap gap-2">
           {items.map((item) => (
@@ -155,7 +121,7 @@ function DetailList({ title, value }: { title: string; value: string }) {
           ))}
         </div>
       ) : (
-        <p className="text-xs text-zinc-500">없음</p>
+        <p className="text-sm text-zinc-500">없음</p>
       )}
     </div>
   );
@@ -168,6 +134,7 @@ async function supabaseRequest<T>(path: string, options: RequestInit = {}) {
 
   const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
     ...options,
+    cache: "no-store",
     headers: {
       apikey: supabaseAnonKey,
       Authorization: `Bearer ${supabaseAnonKey}`,
@@ -187,35 +154,40 @@ async function supabaseRequest<T>(path: string, options: RequestInit = {}) {
 }
 
 export default function TemplatePage() {
-  const [templates, setTemplates] = useState<TemplateItem[]>(initialTemplates);
+  const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [query, setQuery] = useState("");
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isParsing, setIsParsing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
-    async function loadTemplates() {
-      if (!canUseSupabase) {
-        setErrorMessage("Supabase 환경변수를 넣으면 모든 사용자에게 같은 데이터가 보입니다.");
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const data = await supabaseRequest<TemplateItem[]>("server_templates?select=*&order=id.asc");
-        setTemplates(data.length ? data.map(normalizeTemplate) : initialTemplates);
-        setErrorMessage("");
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "템플릿을 불러오지 못했습니다.");
-      } finally {
-        setIsLoading(false);
-      }
+  const loadTemplates = useCallback(async () => {
+    if (!canUseSupabase) {
+      setErrorMessage("Supabase 환경변수를 넣으면 모든 사용자에게 같은 데이터가 보입니다.");
+      setTemplates([]);
+      setIsLoading(false);
+      return;
     }
 
-    loadTemplates();
+    setIsLoading(true);
+
+    try {
+      const data = await supabaseRequest<TemplateItem[]>("server_templates?select=*&order=id.desc");
+      setTemplates(data.map(normalizeTemplate));
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "템플릿을 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadTemplates();
+  }, [loadTemplates]);
 
   const filteredTemplates = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -227,7 +199,6 @@ export default function TemplatePage() {
         template.description,
         template.channels,
         template.roles,
-        template.rules,
         template.tags.join(" "),
       ]
         .join(" ")
@@ -278,7 +249,6 @@ export default function TemplatePage() {
         categories: joinList(data.categories),
         channels: joinList(data.channels),
         roles: joinList(data.roles),
-        bots: data.bots.length ? joinList(data.bots) : "감지된 봇 없음",
       }));
     } catch (error) {
       alert(error instanceof Error ? error.message : "템플릿 정보를 가져오지 못했습니다.");
@@ -296,29 +266,31 @@ export default function TemplatePage() {
     const payload = {
       name: form.name.trim(),
       description: form.categories.trim(),
-      tags: form.tags,
-      category: form.tags[0] || "기타",
+      tags: uniqueTags(form.tags),
+      category: uniqueTags(form.tags)[0] || "기타",
       link: form.link.trim() || "https://discord.com",
       channels: form.channels.trim(),
       roles: form.roles.trim(),
-      rules: form.bots.trim(),
+      rules: "",
     };
+
+    setIsSaving(true);
 
     try {
       if (canUseSupabase) {
         if (editingId) {
-          const [updated] = await supabaseRequest<TemplateItem[]>(
-            `server_templates?id=eq.${editingId}`,
-            { method: "PATCH", body: JSON.stringify(payload) },
-          );
-          setTemplates((prev) => prev.map((item) => (item.id === editingId ? normalizeTemplate(updated) : item)));
+          await supabaseRequest<TemplateItem[]>(`server_templates?id=eq.${editingId}`, {
+            method: "PATCH",
+            body: JSON.stringify(payload),
+          });
         } else {
-          const [created] = await supabaseRequest<TemplateItem[]>("server_templates", {
+          await supabaseRequest<TemplateItem[]>("server_templates", {
             method: "POST",
             body: JSON.stringify(payload),
           });
-          setTemplates((prev) => [normalizeTemplate(created), ...prev]);
         }
+
+        await loadTemplates();
       } else {
         const localItem: TemplateItem = { id: editingId ?? Date.now(), ...payload };
         setTemplates((prev) => {
@@ -330,6 +302,8 @@ export default function TemplatePage() {
       resetForm();
     } catch (error) {
       alert(error instanceof Error ? error.message : "저장에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -337,12 +311,11 @@ export default function TemplatePage() {
     setEditingId(template.id);
     setForm({
       name: template.name,
-      tags: template.tags,
+      tags: uniqueTags(template.tags),
       link: template.link,
       categories: template.description,
       channels: template.channels,
       roles: template.roles,
-      bots: template.rules,
     });
   }
 
@@ -352,9 +325,11 @@ export default function TemplatePage() {
     try {
       if (canUseSupabase) {
         await supabaseRequest<null>(`server_templates?id=eq.${id}`, { method: "DELETE" });
+        await loadTemplates();
+      } else {
+        setTemplates((prev) => prev.filter((item) => item.id !== id));
       }
 
-      setTemplates((prev) => prev.filter((item) => item.id !== id));
       if (editingId === id) resetForm();
     } catch (error) {
       alert(error instanceof Error ? error.message : "삭제에 실패했습니다.");
@@ -369,13 +344,23 @@ export default function TemplatePage() {
         </Link>
 
         <div className="mt-8 rounded-[2rem] border border-white/10 bg-zinc-950/70 p-8 shadow-2xl">
-          <p className="text-sm font-semibold text-indigo-300">TEMPLATE DIRECTORY</p>
-          <h1 className="mt-3 text-4xl font-black md:text-5xl">
-            디스코드 서버 템플릿
-          </h1>
-          <p className="mt-4 max-w-2xl text-zinc-400">
-            템플릿 링크를 넣으면 카테고리, 채널, 역할, 사용 봇을 자동으로 요약합니다.
-          </p>
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-indigo-300">TEMPLATE DIRECTORY</p>
+              <h1 className="mt-3 text-4xl font-black md:text-5xl">
+                디스코드 서버 템플릿
+              </h1>
+              <p className="mt-4 max-w-2xl text-zinc-400">
+                템플릿 링크를 넣으면 카테고리, 채널, 역할을 자동으로 요약합니다.
+              </p>
+            </div>
+            <button
+              onClick={loadTemplates}
+              className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/5"
+            >
+              새로고침
+            </button>
+          </div>
 
           {errorMessage && (
             <p className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
@@ -391,8 +376,8 @@ export default function TemplatePage() {
           />
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[360px_1fr]">
-          <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-5">
+        <div className="mt-8 grid items-start gap-6 lg:grid-cols-[330px_1fr]">
+          <div className="h-fit rounded-2xl border border-white/10 bg-zinc-950/70 p-5">
             <h2 className="text-xl font-bold">
               {editingId ? "템플릿 수정" : "템플릿 추가"}
             </h2>
@@ -404,7 +389,7 @@ export default function TemplatePage() {
               <input className="rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="템플릿 이름" value={form.name} onChange={(event) => updateForm("name", event.target.value)} />
               <div className="rounded-xl border border-white/10 bg-black/30 p-3">
                 <p className="mb-2 text-sm font-semibold text-zinc-300">태그 선택</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1">
                   {templateTags.map((tag) => (
                     <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`rounded-lg px-3 py-2 text-xs font-semibold ${form.tags.includes(tag) ? "bg-indigo-500 text-white" : "bg-white/5 text-zinc-300 hover:bg-white/10"}`}>
                       {tag}
@@ -417,19 +402,18 @@ export default function TemplatePage() {
                 {isParsing ? "가져오는 중" : "템플릿 정보 가져오기"}
               </button>
 
-              {(form.categories || form.channels || form.roles || form.bots) && (
+              {(form.categories || form.channels || form.roles) && (
                 <div className="grid gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-zinc-300">
-                  <p><span className="font-bold text-white">카테고리</span> {previewList(form.categories, 3)}</p>
+                  <p><span className="font-bold text-white">카테고리</span> {previewList(form.categories, 2)}</p>
                   <p><span className="font-bold text-white">채널</span> {countText(form.channels, "채널")}</p>
                   <p><span className="font-bold text-white">역할</span> {countText(form.roles, "역할")}</p>
-                  <p><span className="font-bold text-white">사용 봇</span> {previewList(form.bots, 3)}</p>
                 </div>
               )}
             </div>
 
             <div className="mt-4 flex gap-2">
-              <button onClick={saveTemplate} className="flex-1 rounded-xl bg-indigo-500 px-4 py-3 font-semibold hover:bg-indigo-400">
-                {editingId ? "수정 저장" : "추가"}
+              <button disabled={isSaving} onClick={saveTemplate} className="flex-1 rounded-xl bg-indigo-500 px-4 py-3 font-semibold hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60">
+                {isSaving ? "저장 중" : editingId ? "수정 저장" : "추가"}
               </button>
               {editingId && (
                 <button onClick={resetForm} className="rounded-xl border border-white/10 px-4 py-3 text-zinc-300 hover:bg-white/5">
@@ -441,31 +425,36 @@ export default function TemplatePage() {
 
           <div className="grid gap-5 md:grid-cols-2">
             {isLoading && <p className="text-zinc-400">템플릿을 불러오는 중입니다.</p>}
+            {!isLoading && filteredTemplates.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-6 text-sm text-zinc-400">
+                아직 등록된 템플릿이 없습니다.
+              </div>
+            )}
             {!isLoading && filteredTemplates.map((template) => (
-              <article key={template.id} className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70">
+              <article key={template.id} className="flex h-[310px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70">
                 <div className="border-b border-white/10 bg-white/[0.03] p-5">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap gap-2">
+                    <div className="min-w-0">
+                      <div className="flex max-h-14 flex-wrap gap-2 overflow-hidden">
                         {template.tags.map((tag) => (
                           <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">
                             {tag}
                           </span>
                         ))}
                       </div>
-                      <h2 className="mt-3 text-xl font-bold">{template.name}</h2>
+                      <h2 className="mt-3 truncate text-xl font-bold">{template.name}</h2>
                     </div>
-                    <a href={template.link} target="_blank" rel="noreferrer" className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold hover:bg-indigo-400">
+                    <a href={template.link} target="_blank" rel="noreferrer" className="shrink-0 rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold hover:bg-indigo-400">
                       템플릿 링크
                     </a>
                   </div>
                 </div>
 
-                <div className="space-y-3 p-5 text-sm leading-6 text-zinc-300">
+                <div className="flex flex-1 flex-col justify-between p-5 text-sm leading-6 text-zinc-300">
                   <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-xl border border-white/10 bg-black/20 p-3">
                       <p className="text-xs text-zinc-500">카테고리</p>
-                      <p className="mt-1 font-semibold text-white">{previewList(template.description, 2)}</p>
+                      <p className="mt-1 truncate font-semibold text-white">{previewList(template.description, 2)}</p>
                     </div>
                     <div className="rounded-xl border border-white/10 bg-black/20 p-3">
                       <p className="text-xs text-zinc-500">채널</p>
@@ -475,23 +464,12 @@ export default function TemplatePage() {
                       <p className="text-xs text-zinc-500">역할</p>
                       <p className="mt-1 font-semibold text-white">{countText(template.roles, "역할")}</p>
                     </div>
-                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs text-zinc-500">사용 봇</p>
-                      <p className="mt-1 font-semibold text-white">{previewList(template.rules, 2)}</p>
-                    </div>
                   </div>
 
-                  <details className="rounded-xl border border-white/10 bg-black/20 p-3">
-                    <summary className="cursor-pointer text-xs font-bold text-indigo-200">자세히 보기</summary>
-                    <div className="mt-3 grid gap-3">
-                      <DetailList title="카테고리" value={template.description} />
-                      <DetailList title="채널" value={template.channels} />
-                      <DetailList title="역할" value={template.roles} />
-                      <DetailList title="사용 봇" value={template.rules} />
-                    </div>
-                  </details>
-
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex gap-2 pt-4">
+                    <button onClick={() => setSelectedTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-indigo-200 hover:bg-white/5">
+                      자세히 보기
+                    </button>
                     <button onClick={() => editTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5">
                       수정
                     </button>
@@ -505,6 +483,36 @@ export default function TemplatePage() {
           </div>
         </div>
       </section>
+
+      {selectedTemplate && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-indigo-300">템플릿 상세</p>
+                <h2 className="mt-2 text-3xl font-black">{selectedTemplate.name}</h2>
+              </div>
+              <button onClick={() => setSelectedTemplate(null)} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {selectedTemplate.tags.map((tag) => (
+                <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-6 grid gap-4">
+              <DetailList title="카테고리" value={selectedTemplate.description} />
+              <DetailList title="채널" value={selectedTemplate.channels} />
+              <DetailList title="역할" value={selectedTemplate.roles} />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
