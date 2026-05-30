@@ -34,6 +34,7 @@ type FormState = {
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const canUseSupabase = Boolean(supabaseUrl && supabaseAnonKey);
+const adminStorageKey = "discord-server-maker-admin-password";
 
 const emptyForm: FormState = {
   name: "",
@@ -124,7 +125,6 @@ async function supabaseRequest<T>(path: string, options: RequestInit = {}) {
       apikey: supabaseAnonKey,
       Authorization: `Bearer ${supabaseAnonKey}`,
       "Content-Type": "application/json",
-      Prefer: "return=representation",
       ...options.headers,
     },
   });
@@ -138,6 +138,25 @@ async function supabaseRequest<T>(path: string, options: RequestInit = {}) {
   return (await response.json()) as T;
 }
 
+async function adminRequest(path: string, password: string, options: RequestInit = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-password": password,
+      ...options.headers,
+    },
+  });
+
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.error || "관리자 요청에 실패했습니다.");
+  }
+
+  return data;
+}
+
 export default function TemplatePage() {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [query, setQuery] = useState("");
@@ -145,10 +164,13 @@ export default function TemplatePage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateItem | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [adminPassword, setAdminPassword] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isParsing, setIsParsing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+
+  const isAdmin = Boolean(adminPassword);
 
   const loadTemplates = useCallback(async () => {
     if (!canUseSupabase) {
@@ -172,6 +194,7 @@ export default function TemplatePage() {
   }, []);
 
   useEffect(() => {
+    setAdminPassword(window.localStorage.getItem(adminStorageKey) || "");
     loadTemplates();
   }, [loadTemplates]);
 
@@ -201,6 +224,20 @@ export default function TemplatePage() {
     setForm(emptyForm);
     setEditingId(null);
     setIsFormOpen(false);
+  }
+
+  function loginAdmin() {
+    if (isAdmin) {
+      window.localStorage.removeItem(adminStorageKey);
+      setAdminPassword("");
+      return;
+    }
+
+    const password = window.prompt("관리자 비밀번호");
+    if (!password) return;
+
+    window.localStorage.setItem(adminStorageKey, password);
+    setAdminPassword(password);
   }
 
   async function parseTemplateLink() {
@@ -234,6 +271,11 @@ export default function TemplatePage() {
   }
 
   async function saveTemplate() {
+    if (!adminPassword) {
+      alert("관리자 로그인이 필요합니다.");
+      return;
+    }
+
     if (!form.name.trim()) {
       alert("템플릿 이름을 입력해주세요.");
       return;
@@ -253,26 +295,19 @@ export default function TemplatePage() {
     setIsSaving(true);
 
     try {
-      if (canUseSupabase) {
-        if (editingId) {
-          await supabaseRequest<TemplateItem[]>(`server_templates?id=eq.${editingId}`, {
-            method: "PATCH",
-            body: JSON.stringify(payload),
-          });
-        } else {
-          await supabaseRequest<TemplateItem[]>("server_templates", {
-            method: "POST",
-            body: JSON.stringify(payload),
-          });
-        }
-        await loadTemplates();
+      if (editingId) {
+        await adminRequest("/api/admin/templates", adminPassword, {
+          method: "PATCH",
+          body: JSON.stringify({ id: editingId, ...payload }),
+        });
       } else {
-        const localItem: TemplateItem = { id: editingId ?? Date.now(), ...payload };
-        setTemplates((prev) => {
-          if (editingId) return prev.map((item) => (item.id === editingId ? localItem : item));
-          return [localItem, ...prev];
+        await adminRequest("/api/admin/templates", adminPassword, {
+          method: "POST",
+          body: JSON.stringify(payload),
         });
       }
+
+      await loadTemplates();
       resetForm();
     } catch (error) {
       alert(error instanceof Error ? error.message : "저장에 실패했습니다.");
@@ -282,6 +317,8 @@ export default function TemplatePage() {
   }
 
   function editTemplate(template: TemplateItem) {
+    if (!isAdmin) return;
+
     const summary = getTemplateSummary(template);
     setEditingId(template.id);
     setForm({
@@ -296,15 +333,16 @@ export default function TemplatePage() {
   }
 
   async function deleteTemplate(id: number) {
+    if (!adminPassword) {
+      alert("관리자 로그인이 필요합니다.");
+      return;
+    }
+
     if (!confirm("이 템플릿을 삭제할까요?")) return;
 
     try {
-      if (canUseSupabase) {
-        await supabaseRequest<null>(`server_templates?id=eq.${id}`, { method: "DELETE" });
-        await loadTemplates();
-      } else {
-        setTemplates((prev) => prev.filter((item) => item.id !== id));
-      }
+      await adminRequest(`/api/admin/templates?id=${id}`, adminPassword, { method: "DELETE" });
+      await loadTemplates();
       if (editingId === id) resetForm();
     } catch (error) {
       alert(error instanceof Error ? error.message : "삭제에 실패했습니다.");
@@ -323,7 +361,9 @@ export default function TemplatePage() {
               <h1 className="mt-3 text-4xl font-black md:text-5xl">디스코드 서버 템플릿</h1>
               <p className="mt-4 max-w-2xl text-zinc-400">템플릿 링크를 넣으면 카테고리, 채널, 역할을 자동으로 요약합니다.</p>
             </div>
-            <button onClick={openCreateForm} className="rounded-2xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-400">템플릿 추가</button>
+            {isAdmin && (
+              <button onClick={openCreateForm} className="rounded-2xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-400">템플릿 추가</button>
+            )}
           </div>
 
           {errorMessage && <p className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">{errorMessage}</p>}
@@ -351,8 +391,8 @@ export default function TemplatePage() {
                 <p className="line-clamp-3 min-h-[84px] whitespace-pre-line leading-7 text-zinc-300">{getTemplateSummary(template)}</p>
                 <div className="flex gap-2 pt-4">
                   <button onClick={() => setSelectedTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-indigo-200 hover:bg-white/5">자세히 보기</button>
-                  <button onClick={() => editTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5">수정</button>
-                  <button onClick={() => deleteTemplate(template.id)} className="rounded-lg border border-red-500/30 px-3 py-2 text-xs text-red-300 hover:bg-red-500/10">삭제</button>
+                  {isAdmin && <button onClick={() => editTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5">수정</button>}
+                  {isAdmin && <button onClick={() => deleteTemplate(template.id)} className="rounded-lg border border-red-500/30 px-3 py-2 text-xs text-red-300 hover:bg-red-500/10">삭제</button>}
                 </div>
               </div>
             </article>
@@ -360,7 +400,7 @@ export default function TemplatePage() {
         </div>
       </section>
 
-      {isFormOpen && (
+      {isFormOpen && isAdmin && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
           <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
@@ -394,6 +434,10 @@ export default function TemplatePage() {
           </div>
         </div>
       )}
+
+      <button onClick={loginAdmin} className="fixed bottom-3 right-3 z-40 text-[10px] text-zinc-700 transition hover:text-zinc-400">
+        {isAdmin ? "admin on" : "admin"}
+      </button>
     </main>
   );
 }
