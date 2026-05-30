@@ -35,6 +35,7 @@ article:hover {
 
 article:has(input[value="티토커"]),
 article:has(input[value="만냥"]),
-article:has(input[value="또삐"]) {
+article:has(input[value="또삐"]),
+article:has(input[value="끝봇"]) {
   display: none !important;
 }
