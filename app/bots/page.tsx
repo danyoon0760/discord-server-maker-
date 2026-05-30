@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type BotItem = {
   id: number;
@@ -44,44 +44,7 @@ const botTags = [
   "게임",
 ];
 
-const initialBots: BotItem[] = [
-  {
-    id: 1,
-    name: "Carl-bot",
-    description:
-      "리액션 역할, 자동 역할, 기본 관리 기능에 많이 쓰이는 운영 봇입니다.",
-    tags: ["역할", "인증", "관리"],
-    category: "역할",
-    link: "https://carl.gg/",
-  },
-  {
-    id: 2,
-    name: "Ticket Tool",
-    description:
-      "문의방, 신고방, 신청방을 자동으로 열고 닫을 수 있는 티켓 봇입니다.",
-    tags: ["티켓", "문의", "신고"],
-    category: "티켓",
-    link: "https://tickettool.xyz/",
-  },
-  {
-    id: 3,
-    name: "Statbot",
-    description:
-      "메시지 수, 음성 활동, 서버 활동량을 통계로 확인할 수 있는 봇입니다.",
-    tags: ["통계", "활동"],
-    category: "통계",
-    link: "https://statbot.net/",
-  },
-  {
-    id: 4,
-    name: "YAGPDB",
-    description:
-      "자동 역할, 관리 명령어, 로그 기능을 세밀하게 설정할 수 있는 봇입니다.",
-    tags: ["관리", "로그", "자동화"],
-    category: "관리",
-    link: "https://yagpdb.xyz/",
-  },
-];
+const initialBots: BotItem[] = [];
 
 const emptyForm: BotFormState = {
   name: "",
@@ -90,13 +53,16 @@ const emptyForm: BotFormState = {
   link: "",
 };
 
-function normalizeBot(bot: BotItem): BotItem {
-  const tags = Array.isArray(bot.tags) ? bot.tags : [];
-  const categoryTag = bot.category && !tags.includes(bot.category) ? [bot.category] : [];
+function uniqueTags(tags: string[]) {
+  return Array.from(new Set(tags.map((tag) => tag.trim()).filter(Boolean)));
+}
 
+function normalizeBot(bot: BotItem): BotItem {
   return {
     ...bot,
-    tags: [...categoryTag, ...tags],
+    tags: uniqueTags(Array.isArray(bot.tags) ? bot.tags : []),
+    description: bot.description || "설명이 아직 없습니다.",
+    link: bot.link || "https://discord.com",
   };
 }
 
@@ -107,6 +73,7 @@ async function supabaseRequest<T>(path: string, options: RequestInit = {}) {
 
   const response = await fetch(`${supabaseUrl}/rest/v1/${path}`, {
     ...options,
+    cache: "no-store",
     headers: {
       apikey: supabaseAnonKey,
       Authorization: `Bearer ${supabaseAnonKey}`,
@@ -131,29 +98,33 @@ export default function BotsPage() {
   const [form, setForm] = useState<BotFormState>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  useEffect(() => {
-    async function loadBots() {
-      if (!canUseSupabase) {
-        setErrorMessage("Supabase 환경변수를 넣으면 모든 사용자에게 같은 데이터가 보입니다.");
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const data = await supabaseRequest<BotItem[]>("discord_bots?select=*&order=id.asc");
-        setBots(data.length ? data.map(normalizeBot) : initialBots);
-        setErrorMessage("");
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "봇 목록을 불러오지 못했습니다.");
-      } finally {
-        setIsLoading(false);
-      }
+  const loadBots = useCallback(async () => {
+    if (!canUseSupabase) {
+      setErrorMessage("Supabase 환경변수를 넣으면 모든 사용자에게 같은 데이터가 보입니다.");
+      setBots(initialBots);
+      setIsLoading(false);
+      return;
     }
 
-    loadBots();
+    setIsLoading(true);
+
+    try {
+      const data = await supabaseRequest<BotItem[]>("discord_bots?select=*&order=id.desc");
+      setBots(data.map(normalizeBot));
+      setErrorMessage("");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "봇 목록을 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadBots();
+  }, [loadBots]);
 
   const filteredBots = useMemo(() => {
     const keyword = query.trim().toLowerCase();
@@ -196,26 +167,28 @@ export default function BotsPage() {
     const payload = {
       name: form.name.trim(),
       description: form.description.trim() || "설명이 아직 없습니다.",
-      tags: form.tags,
-      category: form.tags[0] || "기타",
+      tags: uniqueTags(form.tags),
+      category: uniqueTags(form.tags)[0] || "기타",
       link: form.link.trim() || "https://discord.com",
     };
+
+    setIsSaving(true);
 
     try {
       if (canUseSupabase) {
         if (editingId) {
-          const [updated] = await supabaseRequest<BotItem[]>(`discord_bots?id=eq.${editingId}`, {
+          await supabaseRequest<BotItem[]>(`discord_bots?id=eq.${editingId}`, {
             method: "PATCH",
             body: JSON.stringify(payload),
           });
-          setBots((prev) => prev.map((item) => (item.id === editingId ? normalizeBot(updated) : item)));
         } else {
-          const [created] = await supabaseRequest<BotItem[]>("discord_bots", {
+          await supabaseRequest<BotItem[]>("discord_bots", {
             method: "POST",
             body: JSON.stringify(payload),
           });
-          setBots((prev) => [normalizeBot(created), ...prev]);
         }
+
+        await loadBots();
       } else {
         const localItem: BotItem = { id: editingId ?? Date.now(), ...payload };
         setBots((prev) => {
@@ -227,6 +200,8 @@ export default function BotsPage() {
       resetForm();
     } catch (error) {
       alert(error instanceof Error ? error.message : "저장에 실패했습니다.");
+    } finally {
+      setIsSaving(false);
     }
   }
 
@@ -235,7 +210,7 @@ export default function BotsPage() {
     setForm({
       name: bot.name,
       description: bot.description,
-      tags: bot.tags,
+      tags: uniqueTags(bot.tags),
       link: bot.link,
     });
   }
@@ -246,9 +221,11 @@ export default function BotsPage() {
     try {
       if (canUseSupabase) {
         await supabaseRequest<null>(`discord_bots?id=eq.${id}`, { method: "DELETE" });
+        await loadBots();
+      } else {
+        setBots((prev) => prev.filter((item) => item.id !== id));
       }
 
-      setBots((prev) => prev.filter((item) => item.id !== id));
       if (editingId === id) resetForm();
     } catch (error) {
       alert(error instanceof Error ? error.message : "삭제에 실패했습니다.");
@@ -263,13 +240,23 @@ export default function BotsPage() {
         </Link>
 
         <div className="mt-8 rounded-[2rem] border border-white/10 bg-zinc-950/70 p-8 shadow-2xl">
-          <p className="text-sm font-semibold text-indigo-300">BOT DIRECTORY</p>
-          <h1 className="mt-3 text-4xl font-black md:text-5xl">
-            디스코드 봇 추천
-          </h1>
-          <p className="mt-4 max-w-2xl text-zinc-400">
-            분류는 태그로 통합했습니다. 필요한 태그를 선택하면 카드에 그대로 표시됩니다.
-          </p>
+          <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-indigo-300">BOT DIRECTORY</p>
+              <h1 className="mt-3 text-4xl font-black md:text-5xl">
+                디스코드 봇 추천
+              </h1>
+              <p className="mt-4 max-w-2xl text-zinc-400">
+                봇 이름, 태그, 초대 링크를 저장합니다. 새로고침하면 Supabase DB에서 최신 목록을 다시 불러옵니다.
+              </p>
+            </div>
+            <button
+              onClick={loadBots}
+              className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/5"
+            >
+              새로고침
+            </button>
+          </div>
 
           {errorMessage && (
             <p className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
@@ -309,8 +296,8 @@ export default function BotsPage() {
             </div>
 
             <div className="mt-4 flex gap-2">
-              <button onClick={saveBot} className="flex-1 rounded-xl bg-indigo-500 px-4 py-3 font-semibold hover:bg-indigo-400">
-                {editingId ? "수정 저장" : "추가"}
+              <button disabled={isSaving} onClick={saveBot} className="flex-1 rounded-xl bg-indigo-500 px-4 py-3 font-semibold hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60">
+                {isSaving ? "저장 중" : editingId ? "수정 저장" : "추가"}
               </button>
               {editingId && (
                 <button onClick={resetForm} className="rounded-xl border border-white/10 px-4 py-3 text-zinc-300 hover:bg-white/5">
@@ -322,6 +309,11 @@ export default function BotsPage() {
 
           <div className="grid gap-5 md:grid-cols-2">
             {isLoading && <p className="text-zinc-400">봇 목록을 불러오는 중입니다.</p>}
+            {!isLoading && filteredBots.length === 0 && (
+              <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-6 text-sm text-zinc-400">
+                아직 등록된 봇이 없습니다.
+              </div>
+            )}
             {!isLoading && filteredBots.map((bot) => (
               <article key={bot.id} className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70">
                 <div className="border-b border-white/10 bg-white/[0.03] p-5">
