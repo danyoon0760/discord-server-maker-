@@ -3,12 +3,11 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-color: #07080d;
-  background-image:
-    linear-gradient(rgba(7, 8, 13, 0.08), rgba(7, 8, 13, 0.22)),
-    var(--site-pattern-bg);
+  background-color: #000000;
+  background-image: var(--site-pattern-bg);
   background-size: cover;
   background-position: center top;
+  background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
@@ -19,5 +18,5 @@ main.min-h-screen.overflow-hidden.bg-\[\#07080d\] {
 }
 
 body {
-  background: #07080d !important;
+  background: #000000 !important;
 }
