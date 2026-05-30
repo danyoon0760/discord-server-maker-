@@ -51,3 +51,67 @@ body {
 article.flex.h-\[390px\].flex-col.overflow-hidden.rounded-2xl.border.border-white\/10.bg-zinc-950\/70:has(h2) {
   height: 250px;
 }
+
+/* Subtle, low-cost motion. Uses transform/opacity only. */
+@keyframes page-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-soft-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  main > section > * {
+    animation: page-fade-up 360ms ease-out both;
+  }
+
+  main > section > *:nth-child(2) {
+    animation-delay: 45ms;
+  }
+
+  main > section > *:nth-child(3) {
+    animation-delay: 90ms;
+  }
+
+  article,
+  main a,
+  main button {
+    transition-property: transform, border-color, background-color, box-shadow, opacity;
+    transition-duration: 160ms;
+    transition-timing-function: ease-out;
+  }
+
+  article:hover {
+    transform: translateY(-2px);
+    border-color: rgba(129, 140, 248, 0.38);
+  }
+
+  main a:hover,
+  main button:hover {
+    transform: translateY(-1px);
+  }
+
+  a.bg-indigo-500:hover,
+  button.bg-indigo-500:hover {
+    box-shadow: 0 10px 24px rgba(99, 102, 241, 0.22);
+  }
+
+  .fixed.inset-0.z-50 > div {
+    animation: modal-soft-in 160ms ease-out both;
+  }
+}
