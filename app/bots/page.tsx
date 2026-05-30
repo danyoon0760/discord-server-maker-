@@ -8,27 +8,20 @@ type BotItem = {
   name: string;
   description: string;
   tags: string[];
-  category: string;
+  category?: string;
   link: string;
 };
 
-type BotFormState = Omit<BotItem, "id">;
+type BotFormState = {
+  name: string;
+  description: string;
+  tags: string[];
+  link: string;
+};
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const canUseSupabase = Boolean(supabaseUrl && supabaseAnonKey);
-
-const botCategories = [
-  "역할 / 인증",
-  "티켓 / 문의",
-  "레벨 / 활동",
-  "관리 / 로그",
-  "음악",
-  "TTS",
-  "보안",
-  "통계",
-  "기타",
-];
 
 const botTags = [
   "역할",
@@ -45,6 +38,10 @@ const botTags = [
   "TTS",
   "통계",
   "자동화",
+  "환영",
+  "경고",
+  "백업",
+  "게임",
 ];
 
 const initialBots: BotItem[] = [
@@ -54,7 +51,7 @@ const initialBots: BotItem[] = [
     description:
       "리액션 역할, 자동 역할, 기본 관리 기능에 많이 쓰이는 운영 봇입니다.",
     tags: ["역할", "인증", "관리"],
-    category: "역할 / 인증",
+    category: "역할",
     link: "https://carl.gg/",
   },
   {
@@ -63,7 +60,7 @@ const initialBots: BotItem[] = [
     description:
       "문의방, 신고방, 신청방을 자동으로 열고 닫을 수 있는 티켓 봇입니다.",
     tags: ["티켓", "문의", "신고"],
-    category: "티켓 / 문의",
+    category: "티켓",
     link: "https://tickettool.xyz/",
   },
   {
@@ -71,8 +68,8 @@ const initialBots: BotItem[] = [
     name: "Statbot",
     description:
       "메시지 수, 음성 활동, 서버 활동량을 통계로 확인할 수 있는 봇입니다.",
-    tags: ["통계", "활동", "분석"],
-    category: "레벨 / 활동",
+    tags: ["통계", "활동"],
+    category: "통계",
     link: "https://statbot.net/",
   },
   {
@@ -81,7 +78,7 @@ const initialBots: BotItem[] = [
     description:
       "자동 역할, 관리 명령어, 로그 기능을 세밀하게 설정할 수 있는 봇입니다.",
     tags: ["관리", "로그", "자동화"],
-    category: "관리 / 로그",
+    category: "관리",
     link: "https://yagpdb.xyz/",
   },
 ];
@@ -90,9 +87,18 @@ const emptyForm: BotFormState = {
   name: "",
   description: "",
   tags: [],
-  category: "역할 / 인증",
   link: "",
 };
+
+function normalizeBot(bot: BotItem): BotItem {
+  const tags = Array.isArray(bot.tags) ? bot.tags : [];
+  const categoryTag = bot.category && !tags.includes(bot.category) ? [bot.category] : [];
+
+  return {
+    ...bot,
+    tags: [...categoryTag, ...tags],
+  };
+}
 
 async function supabaseRequest<T>(path: string, options: RequestInit = {}) {
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -137,7 +143,7 @@ export default function BotsPage() {
 
       try {
         const data = await supabaseRequest<BotItem[]>("discord_bots?select=*&order=id.asc");
-        setBots(data.length ? data : initialBots);
+        setBots(data.length ? data.map(normalizeBot) : initialBots);
         setErrorMessage("");
       } catch (error) {
         setErrorMessage(error instanceof Error ? error.message : "봇 목록을 불러오지 못했습니다.");
@@ -154,7 +160,7 @@ export default function BotsPage() {
     if (!keyword) return bots;
 
     return bots.filter((bot) => {
-      const target = [bot.name, bot.description, bot.category, bot.tags.join(" ")]
+      const target = [bot.name, bot.description, bot.tags.join(" ")]
         .join(" ")
         .toLowerCase();
 
@@ -191,7 +197,7 @@ export default function BotsPage() {
       name: form.name.trim(),
       description: form.description.trim() || "설명이 아직 없습니다.",
       tags: form.tags,
-      category: form.category,
+      category: form.tags[0] || "기타",
       link: form.link.trim() || "https://discord.com",
     };
 
@@ -202,13 +208,13 @@ export default function BotsPage() {
             method: "PATCH",
             body: JSON.stringify(payload),
           });
-          setBots((prev) => prev.map((item) => (item.id === editingId ? updated : item)));
+          setBots((prev) => prev.map((item) => (item.id === editingId ? normalizeBot(updated) : item)));
         } else {
           const [created] = await supabaseRequest<BotItem[]>("discord_bots", {
             method: "POST",
             body: JSON.stringify(payload),
           });
-          setBots((prev) => [created, ...prev]);
+          setBots((prev) => [normalizeBot(created), ...prev]);
         }
       } else {
         const localItem: BotItem = { id: editingId ?? Date.now(), ...payload };
@@ -230,7 +236,6 @@ export default function BotsPage() {
       name: bot.name,
       description: bot.description,
       tags: bot.tags,
-      category: bot.category,
       link: bot.link,
     });
   }
@@ -263,8 +268,7 @@ export default function BotsPage() {
             디스코드 봇 추천
           </h1>
           <p className="mt-4 max-w-2xl text-zinc-400">
-            Supabase DB와 연결되면 모든 사용자가 같은 봇 목록을 보고,
-            추가·수정·삭제 결과도 전체에 반영됩니다.
+            분류는 태그로 통합했습니다. 필요한 태그를 선택하면 카드에 그대로 표시됩니다.
           </p>
 
           {errorMessage && (
@@ -285,14 +289,11 @@ export default function BotsPage() {
           <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-5">
             <h2 className="text-xl font-bold">{editingId ? "봇 수정" : "봇 추가"}</h2>
             <p className="mt-2 text-sm text-zinc-500">
-              분류와 태그는 선택 방식입니다.
+              분류는 없애고 태그만 사용합니다.
             </p>
 
             <div className="mt-5 grid gap-3">
               <input className="rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="봇 이름" value={form.name} onChange={(event) => updateForm("name", event.target.value)} />
-              <select className="rounded-xl border border-white/10 bg-black/40 px-4 py-3" value={form.category} onChange={(event) => updateForm("category", event.target.value)}>
-                {botCategories.map((category) => <option key={category} value={category}>{category}</option>)}
-              </select>
               <div className="rounded-xl border border-white/10 bg-black/30 p-3">
                 <p className="mb-2 text-sm font-semibold text-zinc-300">태그 선택</p>
                 <div className="flex flex-wrap gap-2">
@@ -326,19 +327,18 @@ export default function BotsPage() {
                 <div className="border-b border-white/10 bg-white/[0.03] p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-sm text-emerald-300">● {bot.category}</p>
-                      <h2 className="mt-2 text-xl font-bold">{bot.name}</h2>
+                      <div className="flex flex-wrap gap-2">
+                        {bot.tags.map((tag) => (
+                          <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <h2 className="mt-3 text-xl font-bold">{bot.name}</h2>
                     </div>
                     <a href={bot.link} target="_blank" rel="noreferrer" className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold hover:bg-indigo-400">
                       초대 링크
                     </a>
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {bot.tags.map((tag) => (
-                      <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">
-                        {tag}
-                      </span>
-                    ))}
                   </div>
                 </div>
 
