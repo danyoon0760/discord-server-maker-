@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type TemplateItem = {
   id: number;
@@ -16,9 +16,39 @@ type BotItem = {
   link: string;
 };
 
+type HomeCard = {
+  id: string;
+  type: "bot" | "template";
+  title: string;
+  description: string;
+  href: string;
+  buttonText: string;
+};
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const canUseSupabase = Boolean(supabaseUrl && supabaseAnonKey);
+
+const fallbackBots: BotItem[] = [
+  {
+    id: -1,
+    name: "Bump Buddy",
+    description: "서버 bump와 홍보 흐름을 관리할 때 쓰기 좋은 서버 성장 보조 봇입니다.",
+    link: "https://discord.com/discovery/applications",
+  },
+  {
+    id: -2,
+    name: "DISBOARD",
+    description: "디스코드 서버 홍보와 검색에 많이 쓰이는 대표적인 서버 리스트 봇입니다.",
+    link: "https://disboard.org/",
+  },
+  {
+    id: -3,
+    name: "Dyno",
+    description: "자동 제재, 관리 명령어, 로그, 역할 관리 등 기본 운영 기능이 강한 종합 관리 봇입니다.",
+    link: "https://dyno.gg/",
+  },
+];
 
 async function supabaseRequest<T>(path: string) {
   if (!supabaseUrl || !supabaseAnonKey) throw new Error("Supabase 환경변수가 설정되지 않았습니다.");
@@ -32,7 +62,7 @@ async function supabaseRequest<T>(path: string) {
     },
   });
 
-  if (!response.ok) throw new Error("최근 목록을 불러오지 못했습니다.");
+  if (!response.ok) throw new Error("목록을 불러오지 못했습니다.");
   return (await response.json()) as T;
 }
 
@@ -42,24 +72,46 @@ function getSummary(value?: string) {
 
 export default function Home() {
   const [recentTemplates, setRecentTemplates] = useState<TemplateItem[]>([]);
-  const [recentBots, setRecentBots] = useState<BotItem[]>([]);
+  const [recentBots, setRecentBots] = useState<BotItem[]>(fallbackBots);
 
   useEffect(() => {
     if (!canUseSupabase) return;
 
     Promise.all([
-      supabaseRequest<TemplateItem[]>("server_templates?select=id,name,category,link&order=id.desc&limit=3"),
-      supabaseRequest<BotItem[]>("discord_bots?select=id,name,description,link&order=id.desc&limit=3"),
+      supabaseRequest<TemplateItem[]>("server_templates?select=id,name,category,link&order=id.desc&limit=6"),
+      supabaseRequest<BotItem[]>("discord_bots?select=id,name,description,link&order=id.desc&limit=6"),
     ])
       .then(([templates, bots]) => {
         setRecentTemplates(templates);
-        setRecentBots(bots);
+        setRecentBots(bots.length ? bots : fallbackBots);
       })
       .catch(() => {
         setRecentTemplates([]);
-        setRecentBots([]);
+        setRecentBots(fallbackBots);
       });
   }, []);
+
+  const cards = useMemo<HomeCard[]>(() => {
+    const botCards = recentBots.slice(0, 3).map((bot) => ({
+      id: `bot-${bot.id}`,
+      type: "bot" as const,
+      title: bot.name,
+      description: getSummary(bot.description),
+      href: bot.link || "/bots",
+      buttonText: "초대 링크",
+    }));
+
+    const templateCards = recentTemplates.slice(0, 6).map((template) => ({
+      id: `template-${template.id}`,
+      type: "template" as const,
+      title: template.name,
+      description: getSummary(template.category),
+      href: template.link || "/template",
+      buttonText: "템플릿 링크",
+    }));
+
+    return [...botCards, ...templateCards];
+  }, [recentBots, recentTemplates]);
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#07080d] text-white">
@@ -70,7 +122,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
       </div>
 
-      <section className="relative mx-auto flex max-w-6xl flex-col gap-8 px-6 py-16">
+      <section className="relative mx-auto flex max-w-6xl flex-col gap-6 px-6 py-16">
         <div className="rounded-[2rem] border border-white/10 bg-zinc-950/70 p-8 shadow-2xl backdrop-blur md:p-10">
           <p className="mb-3 text-sm font-semibold text-indigo-300">디스코드 서버 운영 도구</p>
 
@@ -92,56 +144,31 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <a href="/template" className="group rounded-2xl border border-white/10 bg-zinc-950/70 p-6 backdrop-blur hover:border-indigo-400/60">
-            <p className="text-sm font-semibold text-indigo-300">SERVER TEMPLATE</p>
-            <h2 className="mt-3 text-2xl font-bold">서버 템플릿 보기</h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-400">템플릿 링크를 열기 전에 카테고리, 채널, 역할 구조를 먼저 확인할 수 있습니다.</p>
-          </a>
-
-          <a href="/bots" className="group rounded-2xl border border-white/10 bg-zinc-950/70 p-6 backdrop-blur hover:border-indigo-400/60">
-            <p className="text-sm font-semibold text-indigo-300">BOT DIRECTORY</p>
-            <h2 className="mt-3 text-2xl font-bold">봇 추천 보기</h2>
-            <p className="mt-3 text-sm leading-6 text-zinc-400">인증, 티켓, 관리, 로그, 활동 봇을 설명과 태그로 비교하고 초대 링크로 이동할 수 있습니다.</p>
-          </a>
-        </div>
-
-        <div className="grid gap-4 lg:grid-cols-2">
-          <section className="rounded-2xl border border-white/10 bg-zinc-950/70 p-6 backdrop-blur">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-indigo-300">RECENT TEMPLATES</p>
-                <h2 className="mt-2 text-2xl font-bold">최근 서버 템플릿</h2>
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {cards.map((card) => (
+            <article key={card.id} className="flex h-[250px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70 backdrop-blur">
+              <div className="border-b border-white/10 bg-white/[0.03] p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <h2 className="min-w-0 truncate text-xl font-bold">{card.title}</h2>
+                  <a
+                    href={card.href}
+                    target={card.href.startsWith("http") ? "_blank" : undefined}
+                    rel={card.href.startsWith("http") ? "noreferrer" : undefined}
+                    className="shrink-0 rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold hover:bg-indigo-400"
+                  >
+                    {card.buttonText}
+                  </a>
+                </div>
               </div>
-              <a href="/template" className="text-sm text-zinc-400 hover:text-white">전체 보기</a>
-            </div>
-            <div className="grid gap-3">
-              {recentTemplates.length ? recentTemplates.map((template) => (
-                <a key={template.id} href="/template" className="rounded-xl border border-white/10 bg-black/20 p-4 hover:bg-white/5">
-                  <p className="font-bold text-white">{template.name}</p>
-                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-400">{getSummary(template.category)}</p>
-                </a>
-              )) : <p className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-500">최근 템플릿이 아직 없습니다.</p>}
-            </div>
-          </section>
 
-          <section className="rounded-2xl border border-white/10 bg-zinc-950/70 p-6 backdrop-blur">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-semibold text-indigo-300">RECENT BOTS</p>
-                <h2 className="mt-2 text-2xl font-bold">최근 봇</h2>
-              </div>
-              <a href="/bots" className="text-sm text-zinc-400 hover:text-white">전체 보기</a>
-            </div>
-            <div className="grid gap-3">
-              {recentBots.length ? recentBots.map((bot) => (
-                <a key={bot.id} href="/bots" className="rounded-xl border border-white/10 bg-black/20 p-4 hover:bg-white/5">
-                  <p className="font-bold text-white">{bot.name}</p>
-                  <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-400">{getSummary(bot.description)}</p>
+              <div className="flex flex-1 flex-col justify-between p-5 text-sm text-zinc-300">
+                <p className="line-clamp-3 leading-7 text-zinc-300">{card.description}</p>
+                <a href={card.type === "bot" ? "/bots" : "/template"} className="w-fit rounded-lg border border-white/10 px-3 py-2 text-xs text-indigo-200 hover:bg-white/5">
+                  자세히 보기
                 </a>
-              )) : <p className="rounded-xl border border-white/10 bg-black/20 p-4 text-sm text-zinc-500">최근 봇이 아직 없습니다.</p>}
-            </div>
-          </section>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
     </main>
