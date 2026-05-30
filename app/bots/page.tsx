@@ -43,9 +43,101 @@ const botTags = [
   "경고",
   "백업",
   "게임",
+  "홍보",
+  "카운터",
+  "한국어",
 ];
 
-const initialBots: BotItem[] = [];
+const initialBots: BotItem[] = [
+  {
+    id: -1,
+    name: "Bump Buddy",
+    description: "서버 bump와 홍보 흐름을 관리할 때 쓰기 좋은 서버 성장 보조 봇입니다.",
+    tags: ["홍보", "자동화", "관리"],
+    category: "홍보",
+    link: "https://discord.com/discovery/applications",
+  },
+  {
+    id: -2,
+    name: "DISBOARD",
+    description: "디스코드 서버 홍보와 검색에 많이 쓰이는 대표적인 서버 리스트 봇입니다.",
+    tags: ["홍보", "서버", "커뮤니티"],
+    category: "홍보",
+    link: "https://disboard.org/",
+  },
+  {
+    id: -3,
+    name: "Dyno",
+    description: "자동 제재, 관리 명령어, 로그, 역할 관리 등 기본 운영 기능이 강한 종합 관리 봇입니다.",
+    tags: ["관리", "로그", "자동화", "경고"],
+    category: "관리",
+    link: "https://dyno.gg/",
+  },
+  {
+    id: -4,
+    name: "eTeBot",
+    description: "모드 서버나 커뮤니티에서 사용할 수 있는 서버 운영 보조 봇입니다.",
+    tags: ["관리", "자동화", "한국어"],
+    category: "관리",
+    link: "https://discord.com/discovery/applications",
+  },
+  {
+    id: -5,
+    name: "Jockie Music",
+    description: "여러 음악 봇을 함께 운영할 수 있는 디스코드 음악 재생 봇입니다.",
+    tags: ["음악"],
+    category: "음악",
+    link: "https://www.jockiemusic.com/",
+  },
+  {
+    id: -6,
+    name: "LeaderBoard",
+    description: "서버 활동량과 순위표를 보여주는 리더보드 기능용 봇입니다.",
+    tags: ["레벨", "활동", "통계"],
+    category: "활동",
+    link: "https://leaderboard.run/",
+  },
+  {
+    id: -7,
+    name: "ServerStats",
+    description: "멤버 수, 온라인 수, 서버 통계 등을 카운터 채널로 표시할 때 쓰는 봇입니다.",
+    tags: ["통계", "카운터", "관리"],
+    category: "통계",
+    link: "https://serverstatsbot.com/",
+  },
+  {
+    id: -8,
+    name: "만냥",
+    description: "한국 서버에서 자주 쓰이는 종합 기능 봇입니다. 명령어 기반 운영 보조용으로 정리해둘 만합니다.",
+    tags: ["한국어", "관리", "자동화"],
+    category: "한국어",
+    link: "https://discord.com/discovery/applications",
+  },
+  {
+    id: -9,
+    name: "알로항",
+    description: "서버에서 함께하기, 안내, 편의 기능을 제공하는 한국어 봇입니다.",
+    tags: ["한국어", "관리", "자동화"],
+    category: "한국어",
+    link: "https://discord.com/discovery/applications",
+  },
+  {
+    id: -10,
+    name: "연홍",
+    description: "디스코드 음성 채널에서 텍스트를 읽어주는 한국어 TTS 봇입니다.",
+    tags: ["TTS", "한국어", "음성"],
+    category: "TTS",
+    link: "https://discord.com/discovery/applications",
+  },
+  {
+    id: -11,
+    name: "티토커",
+    description: "텍스트를 음성으로 읽어주는 TTS 봇입니다. 음성방 안내나 대화 보조용으로 사용할 수 있습니다.",
+    tags: ["TTS", "한국어", "음성"],
+    category: "TTS",
+    link: "https://discord.com/discovery/applications",
+  },
+];
 
 const emptyForm: BotFormState = {
   name: "",
@@ -65,6 +157,12 @@ function normalizeBot(bot: BotItem): BotItem {
     description: bot.description || "설명이 아직 없습니다.",
     link: bot.link || "https://discord.com",
   };
+}
+
+function mergeBots(databaseBots: BotItem[]) {
+  const seen = new Set(databaseBots.map((bot) => bot.name.trim().toLowerCase()));
+  const defaults = initialBots.filter((bot) => !seen.has(bot.name.trim().toLowerCase()));
+  return [...databaseBots, ...defaults];
 }
 
 function makeBotSummary(bot: BotItem) {
@@ -150,10 +248,11 @@ export default function BotsPage() {
 
     try {
       const data = await supabaseRequest<BotItem[]>("discord_bots?select=*&order=id.desc");
-      setBots(data.map(normalizeBot));
+      setBots(mergeBots(data.map(normalizeBot)));
       setErrorMessage("");
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "봇 목록을 불러오지 못했습니다.");
+      setBots(initialBots);
     } finally {
       setIsLoading(false);
     }
@@ -283,7 +382,7 @@ export default function BotsPage() {
   }
 
   function editBot(bot: BotItem) {
-    if (!isAdmin) return;
+    if (!isAdmin || bot.id < 0) return;
 
     setEditingId(bot.id);
     setForm({
@@ -296,6 +395,8 @@ export default function BotsPage() {
   }
 
   async function deleteBot(id: number) {
+    if (id < 0) return;
+
     if (!adminPassword) {
       alert("관리자 로그인이 필요합니다.");
       return;
@@ -383,12 +484,12 @@ export default function BotsPage() {
                   <button onClick={() => setSelectedBot(bot)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-indigo-200 hover:bg-white/5">
                     자세히 보기
                   </button>
-                  {isAdmin && (
+                  {isAdmin && bot.id > 0 && (
                     <button onClick={() => editBot(bot)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5">
                       수정
                     </button>
                   )}
-                  {isAdmin && (
+                  {isAdmin && bot.id > 0 && (
                     <button onClick={() => deleteBot(bot.id)} className="rounded-lg border border-red-500/30 px-3 py-2 text-xs text-red-300 hover:bg-red-500/10">
                       삭제
                     </button>
