@@ -97,6 +97,7 @@ export default function BotsPage() {
   const [query, setQuery] = useState("");
   const [form, setForm] = useState<BotFormState>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [selectedBot, setSelectedBot] = useState<BotItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -164,11 +165,12 @@ export default function BotsPage() {
       return;
     }
 
+    const cleanedTags = uniqueTags(form.tags);
     const payload = {
       name: form.name.trim(),
       description: form.description.trim() || "설명이 아직 없습니다.",
-      tags: uniqueTags(form.tags),
-      category: uniqueTags(form.tags)[0] || "기타",
+      tags: cleanedTags,
+      category: cleanedTags[0] || "기타",
       link: form.link.trim() || "https://discord.com",
     };
 
@@ -247,7 +249,7 @@ export default function BotsPage() {
                 디스코드 봇 추천
               </h1>
               <p className="mt-4 max-w-2xl text-zinc-400">
-                봇 이름, 태그, 초대 링크를 저장합니다. 새로고침하면 Supabase DB에서 최신 목록을 다시 불러옵니다.
+                봇 이름, 태그, 초대 링크를 저장합니다. 긴 설명은 카드 안에서 줄이고 자세히 보기로 확인합니다.
               </p>
             </div>
             <button
@@ -272,8 +274,8 @@ export default function BotsPage() {
           />
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[360px_1fr]">
-          <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-5">
+        <div className="mt-8 grid items-start gap-6 lg:grid-cols-[330px_1fr]">
+          <div className="h-fit rounded-2xl border border-white/10 bg-zinc-950/70 p-5">
             <h2 className="text-xl font-bold">{editingId ? "봇 수정" : "봇 추가"}</h2>
             <p className="mt-2 text-sm text-zinc-500">
               분류는 없애고 태그만 사용합니다.
@@ -283,7 +285,7 @@ export default function BotsPage() {
               <input className="rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="봇 이름" value={form.name} onChange={(event) => updateForm("name", event.target.value)} />
               <div className="rounded-xl border border-white/10 bg-black/30 p-3">
                 <p className="mb-2 text-sm font-semibold text-zinc-300">태그 선택</p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1">
                   {botTags.map((tag) => (
                     <button key={tag} type="button" onClick={() => toggleTag(tag)} className={`rounded-lg px-3 py-2 text-xs font-semibold ${form.tags.includes(tag) ? "bg-indigo-500 text-white" : "bg-white/5 text-zinc-300 hover:bg-white/10"}`}>
                       {tag}
@@ -292,7 +294,7 @@ export default function BotsPage() {
                 </div>
               </div>
               <input className="rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="초대 링크 또는 공식 링크" value={form.link} onChange={(event) => updateForm("link", event.target.value)} />
-              <textarea className="min-h-28 rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="봇 설명" value={form.description} onChange={(event) => updateForm("description", event.target.value)} />
+              <textarea className="max-h-28 min-h-24 rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="봇 설명" value={form.description} onChange={(event) => updateForm("description", event.target.value)} />
             </div>
 
             <div className="mt-4 flex gap-2">
@@ -315,29 +317,32 @@ export default function BotsPage() {
               </div>
             )}
             {!isLoading && filteredBots.map((bot) => (
-              <article key={bot.id} className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70">
+              <article key={bot.id} className="flex h-[250px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70">
                 <div className="border-b border-white/10 bg-white/[0.03] p-5">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex flex-wrap gap-2">
+                    <div className="min-w-0">
+                      <div className="flex max-h-14 flex-wrap gap-2 overflow-hidden">
                         {bot.tags.map((tag) => (
                           <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">
                             {tag}
                           </span>
                         ))}
                       </div>
-                      <h2 className="mt-3 text-xl font-bold">{bot.name}</h2>
+                      <h2 className="mt-3 truncate text-xl font-bold">{bot.name}</h2>
                     </div>
-                    <a href={bot.link} target="_blank" rel="noreferrer" className="rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold hover:bg-indigo-400">
+                    <a href={bot.link} target="_blank" rel="noreferrer" className="shrink-0 rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold hover:bg-indigo-400">
                       초대 링크
                     </a>
                   </div>
                 </div>
 
-                <div className="space-y-4 p-5 text-sm leading-6 text-zinc-300">
-                  <p>{bot.description}</p>
+                <div className="flex flex-1 flex-col justify-between p-5 text-sm leading-6 text-zinc-300">
+                  <p className="line-clamp-2 min-h-12">{bot.description}</p>
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex gap-2 pt-4">
+                    <button onClick={() => setSelectedBot(bot)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-indigo-200 hover:bg-white/5">
+                      자세히 보기
+                    </button>
                     <button onClick={() => editBot(bot)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5">
                       수정
                     </button>
@@ -351,6 +356,38 @@ export default function BotsPage() {
           </div>
         </div>
       </section>
+
+      {selectedBot && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-indigo-300">봇 상세</p>
+                <h2 className="mt-2 text-3xl font-black">{selectedBot.name}</h2>
+              </div>
+              <button onClick={() => setSelectedBot(null)} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {selectedBot.tags.map((tag) => (
+                <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">
+                  {tag}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-6 rounded-xl border border-white/10 bg-black/20 p-4 text-sm leading-7 text-zinc-300">
+              {selectedBot.description}
+            </div>
+
+            <a href={selectedBot.link} target="_blank" rel="noreferrer" className="mt-5 inline-flex rounded-xl bg-indigo-500 px-4 py-3 text-sm font-bold hover:bg-indigo-400">
+              초대 링크 열기
+            </a>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
