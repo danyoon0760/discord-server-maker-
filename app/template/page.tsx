@@ -158,14 +158,9 @@ function DiscordChannelPreview({ template }: { template: TemplateItem }) {
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#11131a] p-4">
-      <div className="mb-4">
-        <div className="mb-2 flex items-center justify-between text-xs font-bold text-indigo-300">
-          <span>채널 기능 {channelCount}개</span>
-          <span className="text-zinc-500">카테고리 {categoryCount}개</span>
-        </div>
-        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
-          <div className="h-full w-4/5 rounded-full bg-emerald-400" />
-        </div>
+      <div className="mb-4 flex items-center justify-between text-xs font-bold text-indigo-300">
+        <span>카테고리 & 채널</span>
+        <span className="text-zinc-500">카테고리 {categoryCount}개 · 채널 {channelCount}개</span>
       </div>
 
       <div className="space-y-4 rounded-xl bg-[#0b0c12] p-3">
@@ -199,7 +194,7 @@ function DiscordChannelPreview({ template }: { template: TemplateItem }) {
 }
 
 function RolePreview({ roles }: { roles: string }) {
-  const roleItems = splitList(roles);
+  const roleItems = splitList(roles).reverse();
 
   return (
     <div className="rounded-2xl border border-white/10 bg-[#11131a] p-4">
@@ -208,11 +203,12 @@ function RolePreview({ roles }: { roles: string }) {
         <span className="rounded-full bg-white/5 px-2 py-1 text-xs text-zinc-400">{roleItems.length}개</span>
       </div>
       {roleItems.length ? (
-        <div className="flex max-h-[430px] flex-wrap content-start gap-2 overflow-y-auto pr-1">
+        <div className="max-h-[430px] space-y-2 overflow-y-auto pr-1">
           {roleItems.map((role) => (
-            <span key={role} className="rounded-lg bg-white/5 px-2 py-1 text-xs text-zinc-300">
-              {role}
-            </span>
+            <div key={role} className="flex min-w-0 items-center gap-2 text-sm text-zinc-300">
+              <span className="shrink-0 text-zinc-500">•</span>
+              <span className="min-w-0 truncate whitespace-nowrap">{role}</span>
+            </div>
           ))}
         </div>
       ) : (
