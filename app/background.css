@@ -3,7 +3,6 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-color: #000000;
   background-image: var(--site-pattern-bg);
   background-size: cover;
   background-position: center top;
@@ -17,6 +16,7 @@ main.min-h-screen.overflow-hidden.bg-\[\#07080d\] {
   background-image: none !important;
 }
 
+html,
 body {
-  background: #000000 !important;
+  background: transparent !important;
 }
