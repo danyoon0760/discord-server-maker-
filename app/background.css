@@ -1,5 +1,5 @@
 :root {
-  --site-pattern-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1648' height='927' viewBox='0 0 1648 927'%3E%3Crect width='1648' height='927' fill='%23000000'/%3E%3Cg fill='%23272b31' font-family='Arial Black, Impact, sans-serif' font-size='122' font-weight='900' opacity='1' transform='rotate(14 824 463)'%3E%3Ctext x='-80' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='250' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='580' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='910' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='1240' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='1570' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='60' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='390' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='720' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='1050' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='1380' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='-80' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='250' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='580' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='910' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='1240' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='1570' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='60' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='390' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='720' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='1050' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='1380' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='-80' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='250' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='580' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='910' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='1240' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='1570' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='60' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='390' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='720' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='1050' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='1380' y='930'%3E%7B%23%7D%3C/text%3E%3C/g%3E%3C/svg%3E");
+  --site-pattern-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1648' height='927' viewBox='0 0 1648 927'%3E%3Crect width='1648' height='927' fill='%23000000'/%3E%3Cg fill='%231f2329' font-family='Arial Black, Impact, sans-serif' font-size='122' font-weight='900' opacity='0.58' transform='rotate(14 824 463)'%3E%3Ctext x='-80' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='250' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='580' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='910' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='1240' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='1570' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='60' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='390' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='720' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='1050' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='1380' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='-80' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='250' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='580' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='910' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='1240' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='1570' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='60' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='390' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='720' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='1050' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='1380' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='-80' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='250' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='580' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='910' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='1240' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='1570' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='60' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='390' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='720' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='1050' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='1380' y='930'%3E%7B%23%7D%3C/text%3E%3C/g%3E%3C/svg%3E");
 }
 
 .site-pattern-layer {
@@ -7,21 +7,20 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  background-color: #000000;
   background-image: var(--site-pattern-bg);
   background-size: cover;
   background-position: center top;
   background-repeat: no-repeat;
   background-attachment: fixed;
+  filter: blur(0.8px);
+  transform: scale(1.01);
 }
 
 html,
 body {
   min-height: 100%;
-  background-image: var(--site-pattern-bg) !important;
-  background-size: cover !important;
-  background-position: center top !important;
-  background-repeat: no-repeat !important;
-  background-attachment: fixed !important;
+  background: #000000 !important;
 }
 
 main.min-h-screen.bg-\[\#07080d\],
