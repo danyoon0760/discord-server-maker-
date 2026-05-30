@@ -112,6 +112,7 @@ export default function BotsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [savingInlineKey, setSavingInlineKey] = useState<string | null>(null);
+  const [isBotBackdropPressed, setIsBotBackdropPressed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const isAdmin = Boolean(adminPassword);
@@ -172,12 +173,19 @@ export default function BotsPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  function updateInlineForm(bot: BotItem, field: keyof BotFormState, value: string) {
+  function updateInlineForm(bot: BotItem, field: keyof BotFormState, value: string | string[]) {
     const key = makeInlineKey(bot);
     setInlineForms((prev) => ({
       ...prev,
       [key]: { name: prev[key]?.name ?? bot.name, description: prev[key]?.description ?? bot.description, tags: prev[key]?.tags ?? bot.tags, link: prev[key]?.link ?? bot.link, [field]: value },
     }));
+  }
+
+  function toggleInlineTag(bot: BotItem, tag: string) {
+    const key = makeInlineKey(bot);
+    const currentTags = inlineForms[key]?.tags ?? bot.tags;
+    const nextTags = currentTags.includes(tag) ? currentTags.filter((item) => item !== tag) : [...currentTags, tag];
+    updateInlineForm(bot, "tags", nextTags);
   }
 
   function toggleTag(tag: string) {
@@ -316,7 +324,7 @@ export default function BotsPage() {
             const key = makeInlineKey(bot);
             const inlineForm = inlineForms[key] ?? { name: bot.name, description: bot.description, tags: bot.tags, link: bot.link };
             return (
-              <article key={key} className="flex h-[320px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70">
+              <article key={key} className="flex h-[390px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70">
                 <div className="border-b border-white/10 bg-white/[0.03] p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
@@ -331,6 +339,11 @@ export default function BotsPage() {
                     <div className="space-y-3">
                       <textarea value={inlineForm.description} onChange={(event) => updateInlineForm(bot, "description", event.target.value)} className="h-20 w-full resize-none rounded-lg border border-white/10 bg-black/30 px-3 py-2 leading-6 text-zinc-200 outline-none focus:border-indigo-400" />
                       <input value={inlineForm.link} onChange={(event) => updateInlineForm(bot, "link", event.target.value)} className="w-full rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs text-indigo-200 outline-none focus:border-indigo-400" />
+                      <div className="flex max-h-20 flex-wrap gap-2 overflow-y-auto rounded-lg border border-white/10 bg-black/20 p-2">
+                        {botTags.map((tag) => (
+                          <button key={tag} type="button" onClick={() => toggleInlineTag(bot, tag)} className={`rounded-md px-2 py-1 text-[11px] font-semibold ${inlineForm.tags.includes(tag) ? "bg-indigo-500 text-white" : "bg-white/5 text-zinc-400 hover:bg-white/10"}`}>{tag}</button>
+                        ))}
+                      </div>
                     </div>
                   ) : (
                     <p className="line-clamp-3 min-h-[84px] leading-7 text-zinc-300">{makeBotSummary(bot)}</p>
@@ -359,7 +372,14 @@ export default function BotsPage() {
       )}
 
       {selectedBot && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+        <div
+          onMouseDown={(event) => setIsBotBackdropPressed(event.target === event.currentTarget)}
+          onMouseUp={(event) => {
+            if (isBotBackdropPressed && event.target === event.currentTarget) setSelectedBot(null);
+            setIsBotBackdropPressed(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+        >
           <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-indigo-300">봇 상세</p><h2 className="mt-2 text-3xl font-black">{selectedBot.name}</h2></div><button onClick={() => setSelectedBot(null)} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">닫기</button></div>
             <div className="mt-5 flex flex-wrap gap-2">{selectedBot.tags.map((tag) => <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">{tag}</span>)}</div>
