@@ -22,6 +22,7 @@ type HomeCard = {
   title: string;
   description: string;
   href: string;
+  detailHref: string;
   buttonText: string;
 };
 
@@ -70,6 +71,12 @@ function getSummary(value?: string) {
   return value?.trim() || "설명이 아직 없습니다.";
 }
 
+function detailHref(type: "bot" | "template", title: string) {
+  const param = type === "bot" ? "bot" : "template";
+  const path = type === "bot" ? "/bots" : "/template";
+  return `${path}?${param}=${encodeURIComponent(title)}`;
+}
+
 export default function Home() {
   const [recentTemplates, setRecentTemplates] = useState<TemplateItem[]>([]);
   const [recentBots, setRecentBots] = useState<BotItem[]>(fallbackBots);
@@ -98,6 +105,7 @@ export default function Home() {
       title: bot.name,
       description: getSummary(bot.description),
       href: bot.link || "/bots",
+      detailHref: detailHref("bot", bot.name),
       buttonText: "초대 링크",
     }));
 
@@ -107,6 +115,7 @@ export default function Home() {
       title: template.name,
       description: getSummary(template.category),
       href: template.link || "/template",
+      detailHref: detailHref("template", template.name),
       buttonText: "템플릿 링크",
     }));
 
@@ -163,7 +172,7 @@ export default function Home() {
 
               <div className="flex flex-1 flex-col justify-between p-5 text-sm text-zinc-300">
                 <p className="line-clamp-3 leading-7 text-zinc-300">{card.description}</p>
-                <a href={card.type === "bot" ? "/bots" : "/template"} className="w-fit rounded-lg border border-white/10 px-3 py-2 text-xs text-indigo-200 hover:bg-white/5">
+                <a href={card.detailHref} className="w-fit rounded-lg border border-white/10 px-3 py-2 text-xs text-indigo-200 hover:bg-white/5">
                   자세히 보기
                 </a>
               </div>
