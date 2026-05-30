@@ -15,7 +15,7 @@ export default function Home() {
           </p>
 
           <h1 className="text-5xl font-black tracking-tight md:text-7xl">
-            디코서버메이커
+            디스코드 서버 메이커
           </h1>
 
           <p className="mt-6 max-w-2xl text-base leading-8 text-zinc-300">
