@@ -46,3 +46,8 @@ body {
 .mt-6.grid.gap-4.lg\:grid-cols-\[1\.3fr_0\.9fr\] > div:first-child > div:first-child > span:first-child {
   color: rgb(255 255 255);
 }
+
+/* Bots page: regular cards should be closer to template card height. Admin editing still uses the larger size. */
+article.flex.h-\[390px\].flex-col.overflow-hidden.rounded-2xl.border.border-white\/10.bg-zinc-950\/70:has(h2) {
+  height: 250px;
+}
