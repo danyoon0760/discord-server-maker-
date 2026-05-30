@@ -106,6 +106,14 @@ function countText(value: string, label: string) {
   return `${label} ${splitList(value).length}개`;
 }
 
+function makeCardSummary(template: TemplateItem) {
+  return [
+    `카테고리: ${previewList(template.description, 2)}`,
+    `채널: ${countText(template.channels, "채널")}`,
+    `역할: ${countText(template.roles, "역할")}`,
+  ].join("\n");
+}
+
 function DetailList({ title, value }: { title: string; value: string }) {
   const items = splitList(value);
 
@@ -159,6 +167,7 @@ export default function TemplatePage() {
   const [form, setForm] = useState<FormState>(emptyForm);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateItem | null>(null);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isParsing, setIsParsing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -222,9 +231,16 @@ export default function TemplatePage() {
     });
   }
 
+  function openCreateForm() {
+    setForm(emptyForm);
+    setEditingId(null);
+    setIsFormOpen(true);
+  }
+
   function resetForm() {
     setForm(emptyForm);
     setEditingId(null);
+    setIsFormOpen(false);
   }
 
   async function parseTemplateLink() {
@@ -263,11 +279,12 @@ export default function TemplatePage() {
       return;
     }
 
+    const cleanedTags = uniqueTags(form.tags);
     const payload = {
       name: form.name.trim(),
       description: form.categories.trim(),
-      tags: uniqueTags(form.tags),
-      category: uniqueTags(form.tags)[0] || "기타",
+      tags: cleanedTags,
+      category: cleanedTags[0] || "기타",
       link: form.link.trim() || "https://discord.com",
       channels: form.channels.trim(),
       roles: form.roles.trim(),
@@ -317,6 +334,7 @@ export default function TemplatePage() {
       channels: template.channels,
       roles: template.roles,
     });
+    setIsFormOpen(true);
   }
 
   async function deleteTemplate(id: number) {
@@ -355,10 +373,10 @@ export default function TemplatePage() {
               </p>
             </div>
             <button
-              onClick={loadTemplates}
-              className="rounded-2xl border border-white/10 px-4 py-3 text-sm font-semibold text-zinc-300 hover:bg-white/5"
+              onClick={openCreateForm}
+              className="rounded-2xl bg-indigo-500 px-5 py-3 text-sm font-bold text-white hover:bg-indigo-400"
             >
-              새로고침
+              템플릿 추가
             </button>
           </div>
 
@@ -376,16 +394,62 @@ export default function TemplatePage() {
           />
         </div>
 
-        <div className="mt-8 grid items-start gap-6 lg:grid-cols-[330px_1fr]">
-          <div className="h-fit rounded-2xl border border-white/10 bg-zinc-950/70 p-5">
-            <h2 className="text-xl font-bold">
-              {editingId ? "템플릿 수정" : "템플릿 추가"}
-            </h2>
-            <p className="mt-2 text-sm text-zinc-500">
-              링크를 넣고 자동 가져오기를 누른 뒤 추가하면 됩니다.
-            </p>
+        <div className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {isLoading && <p className="text-zinc-400">템플릿을 불러오는 중입니다.</p>}
+          {!isLoading && filteredTemplates.length === 0 && (
+            <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-6 text-sm text-zinc-400">
+              아직 등록된 템플릿이 없습니다.
+            </div>
+          )}
+          {!isLoading && filteredTemplates.map((template) => (
+            <article key={template.id} className="flex h-[270px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70">
+              <div className="border-b border-white/10 bg-white/[0.03] p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-xl font-bold">{template.name}</h2>
+                  </div>
+                  <a href={template.link} target="_blank" rel="noreferrer" className="shrink-0 rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold hover:bg-indigo-400">
+                    템플릿 링크
+                  </a>
+                </div>
+              </div>
 
-            <div className="mt-5 grid gap-3">
+              <div className="flex flex-1 flex-col justify-between p-5 text-sm text-zinc-300">
+                <p className="min-h-20 whitespace-pre-line leading-7 text-zinc-300">
+                  {makeCardSummary(template)}
+                </p>
+
+                <div className="flex gap-2 pt-4">
+                  <button onClick={() => setSelectedTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-indigo-200 hover:bg-white/5">
+                    자세히 보기
+                  </button>
+                  <button onClick={() => editTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5">
+                    수정
+                  </button>
+                  <button onClick={() => deleteTemplate(template.id)} className="rounded-lg border border-red-500/30 px-3 py-2 text-xs text-red-300 hover:bg-red-500/10">
+                    삭제
+                  </button>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      {isFormOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-indigo-300">TEMPLATE FORM</p>
+                <h2 className="mt-2 text-3xl font-black">{editingId ? "템플릿 수정" : "템플릿 추가"}</h2>
+              </div>
+              <button onClick={resetForm} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">
+                닫기
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-3">
               <input className="rounded-xl border border-white/10 bg-black/40 px-4 py-3" placeholder="템플릿 이름" value={form.name} onChange={(event) => updateForm("name", event.target.value)} />
               <div className="rounded-xl border border-white/10 bg-black/30 p-3">
                 <p className="mb-2 text-sm font-semibold text-zinc-300">태그 선택</p>
@@ -411,7 +475,7 @@ export default function TemplatePage() {
               )}
             </div>
 
-            <div className="mt-4 flex gap-2">
+            <div className="mt-5 flex gap-2">
               <button disabled={isSaving} onClick={saveTemplate} className="flex-1 rounded-xl bg-indigo-500 px-4 py-3 font-semibold hover:bg-indigo-400 disabled:cursor-not-allowed disabled:opacity-60">
                 {isSaving ? "저장 중" : editingId ? "수정 저장" : "추가"}
               </button>
@@ -422,67 +486,8 @@ export default function TemplatePage() {
               )}
             </div>
           </div>
-
-          <div className="grid gap-5 md:grid-cols-2">
-            {isLoading && <p className="text-zinc-400">템플릿을 불러오는 중입니다.</p>}
-            {!isLoading && filteredTemplates.length === 0 && (
-              <div className="rounded-2xl border border-white/10 bg-zinc-950/70 p-6 text-sm text-zinc-400">
-                아직 등록된 템플릿이 없습니다.
-              </div>
-            )}
-            {!isLoading && filteredTemplates.map((template) => (
-              <article key={template.id} className="flex h-[310px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/70">
-                <div className="border-b border-white/10 bg-white/[0.03] p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="flex max-h-14 flex-wrap gap-2 overflow-hidden">
-                        {template.tags.map((tag) => (
-                          <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                      <h2 className="mt-3 truncate text-xl font-bold">{template.name}</h2>
-                    </div>
-                    <a href={template.link} target="_blank" rel="noreferrer" className="shrink-0 rounded-full bg-indigo-500 px-4 py-2 text-sm font-bold hover:bg-indigo-400">
-                      템플릿 링크
-                    </a>
-                  </div>
-                </div>
-
-                <div className="flex flex-1 flex-col justify-between p-5 text-sm leading-6 text-zinc-300">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs text-zinc-500">카테고리</p>
-                      <p className="mt-1 truncate font-semibold text-white">{previewList(template.description, 2)}</p>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs text-zinc-500">채널</p>
-                      <p className="mt-1 font-semibold text-white">{countText(template.channels, "채널")}</p>
-                    </div>
-                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
-                      <p className="text-xs text-zinc-500">역할</p>
-                      <p className="mt-1 font-semibold text-white">{countText(template.roles, "역할")}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <button onClick={() => setSelectedTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-indigo-200 hover:bg-white/5">
-                      자세히 보기
-                    </button>
-                    <button onClick={() => editTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5">
-                      수정
-                    </button>
-                    <button onClick={() => deleteTemplate(template.id)} className="rounded-lg border border-red-500/30 px-3 py-2 text-xs text-red-300 hover:bg-red-500/10">
-                      삭제
-                    </button>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
         </div>
-      </section>
+      )}
 
       {selectedTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
@@ -495,14 +500,6 @@ export default function TemplatePage() {
               <button onClick={() => setSelectedTemplate(null)} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">
                 닫기
               </button>
-            </div>
-
-            <div className="mt-5 flex flex-wrap gap-2">
-              {selectedTemplate.tags.map((tag) => (
-                <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">
-                  {tag}
-                </span>
-              ))}
             </div>
 
             <div className="mt-6 grid gap-4">
