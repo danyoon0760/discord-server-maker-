@@ -267,6 +267,15 @@ async function adminRequest(path: string, password: string, options: RequestInit
   return data;
 }
 
+async function verifyAdminPassword(password: string) {
+  try {
+    await adminRequest("/api/admin/check", password, { method: "POST" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function TemplatePage() {
   const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [query, setQuery] = useState("");
@@ -304,7 +313,19 @@ export default function TemplatePage() {
   }, []);
 
   useEffect(() => {
-    setAdminPassword(window.localStorage.getItem(adminStorageKey) || "");
+    const savedPassword = window.localStorage.getItem(adminStorageKey) || "";
+
+    if (savedPassword) {
+      verifyAdminPassword(savedPassword).then((ok) => {
+        if (ok) {
+          setAdminPassword(savedPassword);
+        } else {
+          window.localStorage.removeItem(adminStorageKey);
+          setAdminPassword("");
+        }
+      });
+    }
+
     loadTemplates();
   }, [loadTemplates]);
 
@@ -336,7 +357,7 @@ export default function TemplatePage() {
     setIsFormOpen(false);
   }
 
-  function loginAdmin() {
+  async function loginAdmin() {
     if (isAdmin) {
       window.localStorage.removeItem(adminStorageKey);
       setAdminPassword("");
@@ -345,6 +366,15 @@ export default function TemplatePage() {
 
     const password = window.prompt("관리자 비밀번호");
     if (!password) return;
+
+    const ok = await verifyAdminPassword(password);
+
+    if (!ok) {
+      window.localStorage.removeItem(adminStorageKey);
+      setAdminPassword("");
+      alert("관리자 비밀번호가 틀렸습니다.");
+      return;
+    }
 
     window.localStorage.setItem(adminStorageKey, password);
     setAdminPassword(password);
@@ -541,14 +571,11 @@ export default function TemplatePage() {
       )}
 
       {selectedTemplate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold text-indigo-300">템플릿 상세</p>
-                <h2 className="mt-2 text-3xl font-black">{selectedTemplate.name}</h2>
-              </div>
-              <button onClick={() => setSelectedTemplate(null)} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">닫기</button>
+        <div onClick={() => setSelectedTemplate(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div onClick={(event) => event.stopPropagation()} className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
+            <div>
+              <p className="text-sm font-semibold text-indigo-300">템플릿 상세</p>
+              <h2 className="mt-2 text-3xl font-black">{selectedTemplate.name}</h2>
             </div>
 
             <p className="mt-5 whitespace-pre-line rounded-xl border border-white/10 bg-black/20 p-4 text-sm leading-7 text-zinc-300">{getTemplateSummary(selectedTemplate)}</p>
