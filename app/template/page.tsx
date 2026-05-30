@@ -31,6 +31,11 @@ type FormState = {
   roles: string;
 };
 
+type ChannelGroup = {
+  name: string;
+  channels: string[];
+};
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const canUseSupabase = Boolean(supabaseUrl && supabaseAnonKey);
@@ -108,22 +113,110 @@ function countText(value: string, label: string) {
   return `${label} ${splitList(value).length}개`;
 }
 
-function DetailList({ title, value }: { title: string; value: string }) {
-  const items = splitList(value);
+function cleanChannelName(channel: string) {
+  return channel
+    .replace(/^#\s*/, "")
+    .replace(/^🔊\s*/, "")
+    .replace(/^📢\s*/, "")
+    .replace(/^🧵\s*/, "")
+    .trim();
+}
+
+function getChannelIcon(channel: string) {
+  if (channel.includes("🔊")) return "🔊";
+  if (channel.includes("📢")) return "#";
+  if (channel.includes("🧵")) return "#";
+  return "#";
+}
+
+function getChannelGroups(template: TemplateItem): ChannelGroup[] {
+  const categories = splitList(template.description);
+  const channels = splitList(template.channels);
+  const groups = new Map<string, string[]>();
+
+  categories.forEach((category) => groups.set(category, []));
+
+  channels.forEach((channel) => {
+    const slashIndex = channel.indexOf(" / ");
+    const hasCategory = slashIndex > -1;
+    const categoryName = hasCategory ? channel.slice(0, slashIndex).trim() : categories[0] || "기타";
+    const channelName = hasCategory ? channel.slice(slashIndex + 3).trim() : channel;
+
+    if (!groups.has(categoryName)) groups.set(categoryName, []);
+    groups.get(categoryName)?.push(channelName);
+  });
+
+  return Array.from(groups.entries())
+    .map(([name, groupChannels]) => ({ name, channels: groupChannels }))
+    .filter((group) => group.name || group.channels.length > 0);
+}
+
+function DiscordChannelPreview({ template }: { template: TemplateItem }) {
+  const groups = getChannelGroups(template);
+  const channelCount = splitList(template.channels).length;
+  const categoryCount = splitList(template.description).length;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-black/20 p-4">
-      <p className="mb-3 text-sm font-bold text-white">{title}</p>
-      {items.length ? (
-        <div className="flex flex-wrap gap-2">
-          {items.map((item) => (
-            <span key={`${title}-${item}`} className="rounded-lg bg-white/5 px-2 py-1 text-xs text-zinc-300">
-              {item}
+    <div className="rounded-2xl border border-white/10 bg-[#11131a] p-4">
+      <div className="mb-4">
+        <div className="mb-2 flex items-center justify-between text-xs font-bold text-indigo-300">
+          <span>채널 기능 {channelCount}개</span>
+          <span className="text-zinc-500">카테고리 {categoryCount}개</span>
+        </div>
+        <div className="h-1.5 overflow-hidden rounded-full bg-zinc-800">
+          <div className="h-full w-4/5 rounded-full bg-emerald-400" />
+        </div>
+      </div>
+
+      <div className="space-y-4 rounded-xl bg-[#0b0c12] p-3">
+        {groups.length ? (
+          groups.map((group) => (
+            <div key={group.name}>
+              <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-zinc-500">
+                ˅ {group.name}
+              </p>
+              <div className="space-y-2">
+                {group.channels.length ? (
+                  group.channels.map((channel) => (
+                    <div key={`${group.name}-${channel}`} className="flex items-center gap-2 text-sm text-zinc-300">
+                      <span className="w-5 shrink-0 text-center text-zinc-500">{getChannelIcon(channel)}</span>
+                      <span className="truncate">{cleanChannelName(channel)}</span>
+                      <span className="ml-auto h-2 w-2 shrink-0 rounded-full bg-indigo-400" />
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-zinc-600">채널 없음</p>
+                )}
+              </div>
+            </div>
+          ))
+        ) : (
+          <p className="text-sm text-zinc-500">채널 정보가 없습니다.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function RolePreview({ roles }: { roles: string }) {
+  const roleItems = splitList(roles);
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[#11131a] p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-sm font-bold text-white">역할 구성</p>
+        <span className="rounded-full bg-white/5 px-2 py-1 text-xs text-zinc-400">{roleItems.length}개</span>
+      </div>
+      {roleItems.length ? (
+        <div className="flex max-h-[430px] flex-wrap content-start gap-2 overflow-y-auto pr-1">
+          {roleItems.map((role) => (
+            <span key={role} className="rounded-lg bg-white/5 px-2 py-1 text-xs text-zinc-300">
+              {role}
             </span>
           ))}
         </div>
       ) : (
-        <p className="text-sm text-zinc-500">없음</p>
+        <p className="text-sm text-zinc-500">역할 정보가 없습니다.</p>
       )}
     </div>
   );
@@ -449,13 +542,25 @@ export default function TemplatePage() {
 
       {selectedTemplate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
+          <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
-              <div><p className="text-sm font-semibold text-indigo-300">템플릿 상세</p><h2 className="mt-2 text-3xl font-black">{selectedTemplate.name}</h2></div>
+              <div>
+                <p className="text-sm font-semibold text-indigo-300">템플릿 상세</p>
+                <h2 className="mt-2 text-3xl font-black">{selectedTemplate.name}</h2>
+              </div>
               <button onClick={() => setSelectedTemplate(null)} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">닫기</button>
             </div>
+
             <p className="mt-5 whitespace-pre-line rounded-xl border border-white/10 bg-black/20 p-4 text-sm leading-7 text-zinc-300">{getTemplateSummary(selectedTemplate)}</p>
-            <div className="mt-6 grid gap-4"><DetailList title="카테고리" value={selectedTemplate.description} /><DetailList title="채널" value={selectedTemplate.channels} /><DetailList title="역할" value={selectedTemplate.roles} /></div>
+
+            <div className="mt-6 grid gap-4 lg:grid-cols-[1.3fr_0.9fr]">
+              <DiscordChannelPreview template={selectedTemplate} />
+              <RolePreview roles={selectedTemplate.roles} />
+            </div>
+
+            <div className="mt-5 flex justify-end">
+              <a href={selectedTemplate.link} target="_blank" rel="noreferrer" className="rounded-xl bg-indigo-500 px-4 py-3 text-sm font-bold hover:bg-indigo-400">템플릿 링크 열기</a>
+            </div>
           </div>
         </div>
       )}
