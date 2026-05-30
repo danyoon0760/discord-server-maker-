@@ -124,13 +124,6 @@ export default function Home() {
 
   return (
     <main className="min-h-screen overflow-hidden bg-[#07080d] text-white">
-      <div className="pointer-events-none fixed inset-0 -z-0">
-        <div className="absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full bg-indigo-600/20 blur-3xl" />
-        <div className="absolute right-10 top-40 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl" />
-        <div className="absolute bottom-0 left-10 h-72 w-72 rounded-full bg-violet-500/10 blur-3xl" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:48px_48px]" />
-      </div>
-
       <section className="relative mx-auto flex max-w-6xl flex-col gap-6 px-6 py-16">
         <div className="rounded-[2rem] border border-white/10 bg-zinc-950/70 p-8 shadow-2xl backdrop-blur md:p-10">
           <p className="mb-3 text-sm font-semibold text-indigo-300">디스코드 서버 운영 도구</p>
