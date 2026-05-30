@@ -27,20 +27,34 @@ const adminStorageKey = "discord-server-maker-admin-password";
 const botTags = [
   "역할", "인증", "관리", "티켓", "문의", "신고", "레벨", "활동", "로그", "보안",
   "음악", "TTS", "통계", "자동화", "환영", "경고", "백업", "게임", "홍보", "카운터", "한국어",
+  "유틸리티", "빗금 명령어", "도박", "뮤직", "대시보드", "번역", "경제", "해외봇", "서버관리",
 ];
 
 const initialBots: BotItem[] = [
   { id: -1, name: "Bump Buddy", description: "서버 bump와 홍보 흐름을 관리할 때 쓰기 좋은 서버 성장 보조 봇입니다.", tags: ["홍보", "자동화", "관리"], category: "홍보", link: "https://discord.com/discovery/applications" },
-  { id: -2, name: "DISBOARD", description: "디스코드 서버 홍보와 검색에 많이 쓰이는 대표적인 서버 리스트 봇입니다.", tags: ["홍보", "서버", "커뮤니티"], category: "홍보", link: "https://disboard.org/" },
-  { id: -3, name: "Dyno", description: "자동 제재, 관리 명령어, 로그, 역할 관리 등 기본 운영 기능이 강한 종합 관리 봇입니다.", tags: ["관리", "로그", "자동화", "경고"], category: "관리", link: "https://dyno.gg/" },
+  { id: -2, name: "DISBOARD", description: "디스코드 서버 홍보와 검색에 많이 쓰이는 대표적인 서버 리스트 봇입니다.", tags: ["홍보", "서버관리", "커뮤니티"], category: "홍보", link: "https://disboard.org/" },
+  { id: -3, name: "Dyno", description: "자동 제재, 관리 명령어, 로그, 역할 관리 등 기본 운영 기능이 강한 종합 관리 봇입니다.", tags: ["관리", "로그", "자동화", "경고", "해외봇"], category: "관리", link: "https://dyno.gg/" },
   { id: -4, name: "eTeBot", description: "모드 서버나 커뮤니티에서 사용할 수 있는 서버 운영 보조 봇입니다.", tags: ["관리", "자동화", "한국어"], category: "관리", link: "https://discord.com/discovery/applications" },
-  { id: -5, name: "Jockie Music", description: "여러 음악 봇을 함께 운영할 수 있는 디스코드 음악 재생 봇입니다.", tags: ["음악"], category: "음악", link: "https://www.jockiemusic.com/" },
+  { id: -5, name: "Jockie Music", description: "여러 음악 봇을 함께 운영할 수 있는 디스코드 음악 재생 봇입니다.", tags: ["음악", "뮤직"], category: "음악", link: "https://www.jockiemusic.com/" },
   { id: -6, name: "LeaderBoard", description: "서버 활동량과 순위표를 보여주는 리더보드 기능용 봇입니다.", tags: ["레벨", "활동", "통계"], category: "활동", link: "https://leaderboard.run/" },
   { id: -7, name: "ServerStats", description: "멤버 수, 온라인 수, 서버 통계 등을 카운터 채널로 표시할 때 쓰는 봇입니다.", tags: ["통계", "카운터", "관리"], category: "통계", link: "https://serverstatsbot.com/" },
   { id: -8, name: "만냥", description: "한국 서버에서 자주 쓰이는 종합 기능 봇입니다. 명령어 기반 운영 보조용으로 정리해둘 만합니다.", tags: ["한국어", "관리", "자동화"], category: "한국어", link: "https://discord.com/discovery/applications" },
-  { id: -9, name: "알로항", description: "서버에서 함께하기, 안내, 편의 기능을 제공하는 한국어 봇입니다.", tags: ["한국어", "관리", "자동화"], category: "한국어", link: "https://discord.com/discovery/applications" },
+  { id: -9, name: "알로항", description: "서버에서 함께하기, 안내, 편의 기능을 제공하는 한국어 봇입니다.", tags: ["한국어", "관리", "자동화", "유틸리티"], category: "한국어", link: "https://discord.com/discovery/applications" },
   { id: -10, name: "연홍", description: "디스코드 음성 채널에서 텍스트를 읽어주는 한국어 TTS 봇입니다.", tags: ["TTS", "한국어", "음성"], category: "TTS", link: "https://discord.com/discovery/applications" },
   { id: -11, name: "티토커", description: "텍스트를 음성으로 읽어주는 TTS 봇입니다. 음성방 안내나 대화 보조용으로 사용할 수 있습니다.", tags: ["TTS", "한국어", "음성"], category: "TTS", link: "https://discord.com/discovery/applications" },
+  { id: -12, name: "치직", description: "치지직 방송 알림을 디스코드에서 받아볼 수 있는 방송 알림 봇입니다.", tags: ["한국어", "유틸리티", "알림", "방송"], category: "알림", link: "https://chzzk.me/" },
+  { id: -13, name: "또삐", description: "서버 운영 보조, 음악, 대시보드, 도박 등 다양한 기능을 제공하는 한국어 봇입니다.", tags: ["뮤직", "대시보드", "도박", "유틸리티", "한국어"], category: "유틸리티", link: "https://discord.com/discovery/applications" },
+  { id: -14, name: "시루", description: "유튜브, 자동 재생, 종료, 모드 기능 제한 등을 지원하는 음악 중심 봇입니다.", tags: ["음악", "뮤직", "유틸리티", "자동화", "한국어"], category: "음악", link: "https://discord.com/discovery/applications" },
+  { id: -15, name: "노래하는하리보", description: "디스코드에서 많이 쓰이는 한국어 음악 봇입니다. 음성 채널에서 음악 재생 용도로 쓰기 좋습니다.", tags: ["음악", "뮤직", "한국어"], category: "음악", link: "https://haribosinging.github.io/" },
+  { id: -16, name: "끝봇", description: "끝말잇기 게임을 디스코드에서 플레이할 수 있는 한국어 게임 봇입니다.", tags: ["게임", "유틸리티", "빗금 명령어", "한국어"], category: "게임", link: "https://discord.com/discovery/applications" },
+  { id: -17, name: "Manbo", description: "성능과 기능을 강조한 디스코드 봇으로 관리, 음악, 유틸리티 기능을 함께 정리해둘 만합니다.", tags: ["관리", "뮤직", "유틸리티", "한국어"], category: "유틸리티", link: "https://discord.com/discovery/applications" },
+  { id: -18, name: "PH봇", description: "더 편리하게 돌아온 서버 관리·유틸리티 계열 한국어 봇입니다.", tags: ["관리", "유틸리티", "뮤직", "한국어"], category: "관리", link: "https://discord.com/discovery/applications" },
+  { id: -19, name: "MEE6", description: "레벨, 환영 메시지, 자동 관리, 커스텀 명령어 등 서버 운영 자동화에 많이 쓰이는 해외 봇입니다.", tags: ["레벨", "환영", "관리", "자동화", "해외봇"], category: "관리", link: "https://mee6.xyz/" },
+  { id: -20, name: "Carl-bot", description: "리액션 역할, 로그, 자동 관리, 모더레이션 기능이 강한 서버 관리용 해외 봇입니다.", tags: ["역할", "로그", "관리", "자동화", "해외봇"], category: "관리", link: "https://carl.gg/" },
+  { id: -21, name: "ProBot", description: "자동 관리, 레벨, 환영 이미지, 로그 기능을 제공하는 종합 서버 운영 봇입니다.", tags: ["관리", "레벨", "환영", "로그", "해외봇"], category: "관리", link: "https://probot.io/" },
+  { id: -22, name: "Ticket Tool", description: "문의, 신고, 지원 채널을 티켓 방식으로 운영할 때 쓰기 좋은 티켓 전문 봇입니다.", tags: ["티켓", "문의", "신고", "관리", "해외봇"], category: "티켓", link: "https://tickettool.xyz/" },
+  { id: -23, name: "YAGPDB", description: "자동 역할, 커스텀 명령어, 모더레이션, 로그 등 고급 서버 자동화에 쓰이는 해외 봇입니다.", tags: ["역할", "관리", "로그", "자동화", "해외봇"], category: "자동화", link: "https://yagpdb.xyz/" },
+  { id: -24, name: "FredBoat", description: "음성 채널에서 음악을 재생하는 해외 음악 봇입니다.", tags: ["음악", "뮤직", "해외봇"], category: "음악", link: "https://fredboat.com/" },
 ];
 
 const emptyForm: BotFormState = { name: "", description: "", tags: [], link: "" };
