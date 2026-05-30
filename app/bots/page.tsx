@@ -115,6 +115,15 @@ async function adminRequest(path: string, password: string, options: RequestInit
   return data;
 }
 
+async function verifyAdminPassword(password: string) {
+  try {
+    await adminRequest("/api/admin/check", password, { method: "POST" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default function BotsPage() {
   const [bots, setBots] = useState<BotItem[]>(initialBots);
   const [query, setQuery] = useState("");
@@ -151,7 +160,19 @@ export default function BotsPage() {
   }, []);
 
   useEffect(() => {
-    setAdminPassword(window.localStorage.getItem(adminStorageKey) || "");
+    const savedPassword = window.localStorage.getItem(adminStorageKey) || "";
+
+    if (savedPassword) {
+      verifyAdminPassword(savedPassword).then((ok) => {
+        if (ok) {
+          setAdminPassword(savedPassword);
+        } else {
+          window.localStorage.removeItem(adminStorageKey);
+          setAdminPassword("");
+        }
+      });
+    }
+
     loadBots();
   }, [loadBots]);
 
@@ -194,7 +215,7 @@ export default function BotsPage() {
     setIsFormOpen(false);
   }
 
-  function loginAdmin() {
+  async function loginAdmin() {
     if (isAdmin) {
       window.localStorage.removeItem(adminStorageKey);
       setAdminPassword("");
@@ -203,6 +224,15 @@ export default function BotsPage() {
 
     const password = window.prompt("관리자 비밀번호");
     if (!password) return;
+
+    const ok = await verifyAdminPassword(password);
+
+    if (!ok) {
+      window.localStorage.removeItem(adminStorageKey);
+      setAdminPassword("");
+      alert("관리자 비밀번호가 틀렸습니다.");
+      return;
+    }
 
     window.localStorage.setItem(adminStorageKey, password);
     setAdminPassword(password);
