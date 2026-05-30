@@ -218,6 +218,17 @@ export default function BotsPage() {
     setIsFormOpen(false);
   }
 
+  function closeSelectedBot() {
+    setSelectedBot(null);
+    setIsBotBackdropPressed(false);
+
+    const url = new URL(window.location.href);
+    if (url.searchParams.has("bot")) {
+      url.searchParams.delete("bot");
+      window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
+    }
+  }
+
   async function loginAdmin() {
     if (isAdmin) {
       window.localStorage.removeItem(adminStorageKey);
@@ -386,13 +397,13 @@ export default function BotsPage() {
         <div
           onMouseDown={(event) => setIsBotBackdropPressed(event.target === event.currentTarget)}
           onMouseUp={(event) => {
-            if (isBotBackdropPressed && event.target === event.currentTarget) setSelectedBot(null);
+            if (isBotBackdropPressed && event.target === event.currentTarget) closeSelectedBot();
             setIsBotBackdropPressed(false);
           }}
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
         >
           <div className="max-h-[85vh] w-full max-w-2xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-indigo-300">봇 상세</p><h2 className="mt-2 text-3xl font-black">{selectedBot.name}</h2></div><button onClick={() => setSelectedBot(null)} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">닫기</button></div>
+            <div className="flex items-start justify-between gap-4"><div><p className="text-sm font-semibold text-indigo-300">봇 상세</p><h2 className="mt-2 text-3xl font-black">{selectedBot.name}</h2></div><button onClick={closeSelectedBot} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">닫기</button></div>
             <div className="mt-5 flex flex-wrap gap-2">{selectedBot.tags.map((tag) => <span key={tag} className="rounded-lg bg-indigo-500/10 px-2 py-1 text-xs font-semibold text-indigo-200">{tag}</span>)}</div>
             <div className="mt-6 rounded-xl border border-white/10 bg-black/20 p-4 text-sm leading-7 text-zinc-300">{selectedBot.description}</div>
             <a href={selectedBot.link} target="_blank" rel="noreferrer" className="mt-5 inline-flex rounded-xl bg-indigo-500 px-4 py-3 text-sm font-bold hover:bg-indigo-400">초대 링크 열기</a>
