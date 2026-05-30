@@ -287,6 +287,7 @@ export default function TemplatePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isParsing, setIsParsing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTemplateBackdropPressed, setIsTemplateBackdropPressed] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
   const isAdmin = Boolean(adminPassword);
@@ -571,11 +572,21 @@ export default function TemplatePage() {
       )}
 
       {selectedTemplate && (
-        <div onClick={() => setSelectedTemplate(null)} className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <div onClick={(event) => event.stopPropagation()} className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
-            <div>
-              <p className="text-sm font-semibold text-indigo-300">템플릿 상세</p>
-              <h2 className="mt-2 text-3xl font-black">{selectedTemplate.name}</h2>
+        <div
+          onMouseDown={(event) => setIsTemplateBackdropPressed(event.target === event.currentTarget)}
+          onMouseUp={(event) => {
+            if (isTemplateBackdropPressed && event.target === event.currentTarget) setSelectedTemplate(null);
+            setIsTemplateBackdropPressed(false);
+          }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+        >
+          <div className="max-h-[90vh] w-full max-w-5xl overflow-y-auto rounded-3xl border border-white/10 bg-[#0b0c12] p-6 shadow-2xl">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold text-indigo-300">템플릿 상세</p>
+                <h2 className="mt-2 text-3xl font-black">{selectedTemplate.name}</h2>
+              </div>
+              <button onClick={() => setSelectedTemplate(null)} className="rounded-xl border border-white/10 px-4 py-2 text-sm text-zinc-300 hover:bg-white/5">닫기</button>
             </div>
 
             <p className="mt-5 whitespace-pre-line rounded-xl border border-white/10 bg-black/20 p-4 text-sm leading-7 text-zinc-300">{getTemplateSummary(selectedTemplate)}</p>
