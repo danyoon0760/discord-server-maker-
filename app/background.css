@@ -32,3 +32,9 @@ main.min-h-screen.overflow-hidden.bg-\[\#07080d\] {
 article:hover {
   transform: none !important;
 }
+
+article:has(input[value="티토커"]),
+article:has(input[value="만냥"]),
+article:has(input[value="또삐"]) {
+  display: none !important;
+}
