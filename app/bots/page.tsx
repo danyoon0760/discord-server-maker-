@@ -163,6 +163,17 @@ export default function BotsPage() {
     });
   }, [bots]);
 
+  useEffect(() => {
+    if (isLoading || selectedBot) return;
+
+    const botName = new URLSearchParams(window.location.search).get("bot");
+    if (!botName) return;
+
+    const decodedName = botName.trim().toLowerCase();
+    const matchedBot = bots.find((bot) => bot.name.trim().toLowerCase() === decodedName);
+    if (matchedBot) setSelectedBot(matchedBot);
+  }, [bots, isLoading, selectedBot]);
+
   const filteredBots = useMemo(() => {
     const keyword = query.trim().toLowerCase();
     if (!keyword) return bots;
