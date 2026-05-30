@@ -66,9 +66,9 @@ const initialTemplates: TemplateItem[] = [
     tags: ["발로란트", "게임", "내전", "파티모집"],
     category: "게임",
     link: "https://discord.com/developers/docs/resources/guild-template",
-    channels: "#공지, #서버규칙, #자기소개, #파티모집, #내전신청, #클립자랑, #자유채팅, #음성대기방",
-    roles: "서버장, 관리자, 내전관리자, 성인, 미자, 아이언~브론즈, 실버~골드, 플래~다이아, 초월자 이상",
-    rules: "Carl-bot, Ticket Tool, Statbot",
+    channels: "#공지\n#서버규칙\n#자기소개\n#파티모집\n#내전신청\n#클립자랑\n#자유채팅\n#음성대기방",
+    roles: "서버장\n관리자\n내전관리자\n성인\n미자\n아이언~브론즈\n실버~골드\n플래~다이아\n초월자 이상",
+    rules: "Carl-bot\nTicket Tool\nStatbot",
   },
   {
     id: 2,
@@ -77,9 +77,9 @@ const initialTemplates: TemplateItem[] = [
     tags: ["롤", "게임", "파티모집", "내전"],
     category: "게임",
     link: "https://discord.com/developers/docs/resources/guild-template",
-    channels: "#공지, #서버규칙, #자기소개, #듀오모집, #자랭모집, #내전신청, #자유채팅, #음성대기방",
-    roles: "서버장, 관리자, 탑, 정글, 미드, 원딜, 서폿, 브실골, 플다에, 마스터 이상",
-    rules: "Carl-bot, MEE6, Statbot",
+    channels: "#공지\n#서버규칙\n#자기소개\n#듀오모집\n#자랭모집\n#내전신청\n#자유채팅\n#음성대기방",
+    roles: "서버장\n관리자\n탑\n정글\n미드\n원딜\n서폿\n브실골\n플다에\n마스터 이상",
+    rules: "Carl-bot\nMEE6\nStatbot",
   },
   {
     id: 3,
@@ -88,9 +88,9 @@ const initialTemplates: TemplateItem[] = [
     tags: ["친목", "커뮤니티", "수다"],
     category: "친목",
     link: "https://discord.com/developers/docs/resources/guild-template",
-    channels: "#공지, #규칙, #자기소개, #자유수다, #사진공유, #게임모집, #질문방, #음성채팅",
-    roles: "서버장, 관리자, 인증멤버, 신입, 활동멤버, 부스터",
-    rules: "Carl-bot, Dyno, Ticket Tool",
+    channels: "#공지\n#규칙\n#자기소개\n#자유수다\n#사진공유\n#게임모집\n#질문방\n#음성채팅",
+    roles: "서버장\n관리자\n인증멤버\n신입\n활동멤버\n부스터",
+    rules: "Carl-bot\nDyno\nTicket Tool",
   },
 ];
 
@@ -112,6 +112,53 @@ function normalizeTemplate(template: TemplateItem): TemplateItem {
     ...template,
     tags: [...categoryTag, ...tags],
   };
+}
+
+function joinList(values: string[]) {
+  return values.filter(Boolean).join("\n");
+}
+
+function splitList(value: string) {
+  return value
+    .split(/\n|,(?=\s*[^#🔊📢🧵])/g)
+    .map((item) => item.trim())
+    .filter(Boolean)
+    .filter((item) => item !== "감지된 봇 없음");
+}
+
+function previewList(value: string, max = 6) {
+  const items = splitList(value);
+  if (items.length === 0) return "없음";
+
+  const shown = items.slice(0, max).join(", ");
+  const hiddenCount = items.length - max;
+  return hiddenCount > 0 ? `${shown} 외 ${hiddenCount}개` : shown;
+}
+
+function countText(value: string, label: string) {
+  const count = splitList(value).length;
+  return `${label} ${count}개`;
+}
+
+function DetailList({ title, value }: { title: string; value: string }) {
+  const items = splitList(value);
+
+  return (
+    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+      <p className="mb-2 text-xs font-bold text-white">{title}</p>
+      {items.length ? (
+        <div className="flex flex-wrap gap-2">
+          {items.map((item) => (
+            <span key={`${title}-${item}`} className="rounded-lg bg-white/5 px-2 py-1 text-xs text-zinc-300">
+              {item}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-xs text-zinc-500">없음</p>
+      )}
+    </div>
+  );
 }
 
 async function supabaseRequest<T>(path: string, options: RequestInit = {}) {
@@ -175,7 +222,14 @@ export default function TemplatePage() {
     if (!keyword) return templates;
 
     return templates.filter((template) => {
-      const target = [template.name, template.description, template.channels, template.roles, template.rules, template.tags.join(" ")]
+      const target = [
+        template.name,
+        template.description,
+        template.channels,
+        template.roles,
+        template.rules,
+        template.tags.join(" "),
+      ]
         .join(" ")
         .toLowerCase();
 
@@ -221,10 +275,10 @@ export default function TemplatePage() {
       setForm((prev) => ({
         ...prev,
         name: prev.name.trim() || data.name,
-        categories: data.categories.join(", "),
-        channels: data.channels.join(", "),
-        roles: data.roles.join(", "),
-        bots: data.bots.length ? data.bots.join(", ") : "감지된 봇 없음",
+        categories: joinList(data.categories),
+        channels: joinList(data.channels),
+        roles: joinList(data.roles),
+        bots: data.bots.length ? joinList(data.bots) : "감지된 봇 없음",
       }));
     } catch (error) {
       alert(error instanceof Error ? error.message : "템플릿 정보를 가져오지 못했습니다.");
@@ -320,7 +374,7 @@ export default function TemplatePage() {
             디스코드 서버 템플릿
           </h1>
           <p className="mt-4 max-w-2xl text-zinc-400">
-            템플릿 링크를 넣고 정보를 가져오면 카테고리, 채널, 역할, 사용된 봇을 자동으로 정리합니다.
+            템플릿 링크를 넣으면 카테고리, 채널, 역할, 사용 봇을 자동으로 요약합니다.
           </p>
 
           {errorMessage && (
@@ -364,27 +418,11 @@ export default function TemplatePage() {
               </button>
 
               {(form.categories || form.channels || form.roles || form.bots) && (
-                <div className="overflow-hidden rounded-xl border border-white/10 text-xs text-zinc-300">
-                  <table className="w-full text-left">
-                    <tbody>
-                      <tr className="border-b border-white/10">
-                        <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">카테고리</th>
-                        <td className="px-3 py-2">{form.categories || "없음"}</td>
-                      </tr>
-                      <tr className="border-b border-white/10">
-                        <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">채널</th>
-                        <td className="px-3 py-2">{form.channels || "없음"}</td>
-                      </tr>
-                      <tr className="border-b border-white/10">
-                        <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">역할</th>
-                        <td className="px-3 py-2">{form.roles || "없음"}</td>
-                      </tr>
-                      <tr>
-                        <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">사용 봇</th>
-                        <td className="px-3 py-2">{form.bots || "없음"}</td>
-                      </tr>
-                    </tbody>
-                  </table>
+                <div className="grid gap-2 rounded-xl border border-white/10 bg-black/20 p-3 text-xs text-zinc-300">
+                  <p><span className="font-bold text-white">카테고리</span> {previewList(form.categories, 3)}</p>
+                  <p><span className="font-bold text-white">채널</span> {countText(form.channels, "채널")}</p>
+                  <p><span className="font-bold text-white">역할</span> {countText(form.roles, "역할")}</p>
+                  <p><span className="font-bold text-white">사용 봇</span> {previewList(form.bots, 3)}</p>
                 </div>
               )}
             </div>
@@ -423,29 +461,35 @@ export default function TemplatePage() {
                   </div>
                 </div>
 
-                <div className="space-y-4 p-5 text-sm leading-6 text-zinc-300">
-                  <div className="overflow-hidden rounded-xl border border-white/10">
-                    <table className="w-full text-left text-xs">
-                      <tbody>
-                        <tr className="border-b border-white/10">
-                          <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">카테고리</th>
-                          <td className="px-3 py-2">{template.description || "없음"}</td>
-                        </tr>
-                        <tr className="border-b border-white/10">
-                          <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">채널</th>
-                          <td className="px-3 py-2">{template.channels || "없음"}</td>
-                        </tr>
-                        <tr className="border-b border-white/10">
-                          <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">역할</th>
-                          <td className="px-3 py-2">{template.roles || "없음"}</td>
-                        </tr>
-                        <tr>
-                          <th className="w-20 bg-white/[0.03] px-3 py-2 text-white">사용 봇</th>
-                          <td className="px-3 py-2">{template.rules || "없음"}</td>
-                        </tr>
-                      </tbody>
-                    </table>
+                <div className="space-y-3 p-5 text-sm leading-6 text-zinc-300">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                      <p className="text-xs text-zinc-500">카테고리</p>
+                      <p className="mt-1 font-semibold text-white">{previewList(template.description, 2)}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                      <p className="text-xs text-zinc-500">채널</p>
+                      <p className="mt-1 font-semibold text-white">{countText(template.channels, "채널")}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                      <p className="text-xs text-zinc-500">역할</p>
+                      <p className="mt-1 font-semibold text-white">{countText(template.roles, "역할")}</p>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-black/20 p-3">
+                      <p className="text-xs text-zinc-500">사용 봇</p>
+                      <p className="mt-1 font-semibold text-white">{previewList(template.rules, 2)}</p>
+                    </div>
                   </div>
+
+                  <details className="rounded-xl border border-white/10 bg-black/20 p-3">
+                    <summary className="cursor-pointer text-xs font-bold text-indigo-200">자세히 보기</summary>
+                    <div className="mt-3 grid gap-3">
+                      <DetailList title="카테고리" value={template.description} />
+                      <DetailList title="채널" value={template.channels} />
+                      <DetailList title="역할" value={template.roles} />
+                      <DetailList title="사용 봇" value={template.rules} />
+                    </div>
+                  </details>
 
                   <div className="flex gap-2 pt-2">
                     <button onClick={() => editTemplate(template)} className="rounded-lg border border-white/10 px-3 py-2 text-xs text-zinc-300 hover:bg-white/5">
