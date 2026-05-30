@@ -1,5 +1,5 @@
 :root {
-  --site-pattern-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1648' height='927' viewBox='0 0 1648 927'%3E%3Crect width='1648' height='927' fill='%23000000'/%3E%3Cg fill='%231f2329' font-family='Arial Black, Impact, sans-serif' font-size='122' font-weight='900' opacity='0.58' transform='rotate(14 824 463)'%3E%3Ctext x='-80' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='250' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='580' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='910' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='1240' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='1570' y='30'%3E%7B%23%7D%3C/text%3E%3Ctext x='60' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='390' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='720' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='1050' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='1380' y='210'%3E%7B%23%7D%3C/text%3E%3Ctext x='-80' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='250' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='580' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='910' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='1240' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='1570' y='390'%3E%7B%23%7D%3C/text%3E%3Ctext x='60' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='390' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='720' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='1050' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='1380' y='570'%3E%7B%23%7D%3C/text%3E%3Ctext x='-80' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='250' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='580' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='910' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='1240' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='1570' y='750'%3E%7B%23%7D%3C/text%3E%3Ctext x='60' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='390' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='720' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='1050' y='930'%3E%7B%23%7D%3C/text%3E%3Ctext x='1380' y='930'%3E%7B%23%7D%3C/text%3E%3C/g%3E%3C/svg%3E");
+  --site-pattern-bg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='360' height='240' viewBox='0 0 360 240'%3E%3Crect width='360' height='240' fill='%23000000'/%3E%3Cg fill='%231f2329' font-family='Arial Black, Impact, sans-serif' font-size='56' font-weight='900' opacity='0.58' transform='rotate(14 180 120)'%3E%3Ctext x='8' y='62'%3E%7B%23%7D%3C/text%3E%3Ctext x='188' y='62'%3E%7B%23%7D%3C/text%3E%3Ctext x='98' y='172'%3E%7B%23%7D%3C/text%3E%3Ctext x='278' y='172'%3E%7B%23%7D%3C/text%3E%3C/g%3E%3C/svg%3E");
 }
 
 .site-pattern-layer {
@@ -9,9 +9,9 @@
   pointer-events: none;
   background-color: #000000;
   background-image: var(--site-pattern-bg);
-  background-size: cover;
+  background-size: 360px 240px;
   background-position: center top;
-  background-repeat: no-repeat;
+  background-repeat: repeat;
   background-attachment: fixed;
   filter: blur(0.8px);
   transform: scale(1.01);
@@ -31,11 +31,4 @@ main.min-h-screen.overflow-hidden.bg-\[\#07080d\] {
 
 article:hover {
   transform: none !important;
-}
-
-article:has(input[value="티토커"]),
-article:has(input[value="만냥"]),
-article:has(input[value="또삐"]),
-article:has(input[value="끝봇"]) {
-  display: none !important;
 }
