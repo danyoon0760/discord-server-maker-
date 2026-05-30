@@ -1,0 +1,23 @@
+.site-pattern-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: #07080d;
+  background-image:
+    linear-gradient(rgba(7, 8, 13, 0.08), rgba(7, 8, 13, 0.22)),
+    var(--site-pattern-bg);
+  background-size: cover;
+  background-position: center top;
+  background-attachment: fixed;
+}
+
+main.min-h-screen.bg-\[\#07080d\],
+main.min-h-screen.overflow-hidden.bg-\[\#07080d\] {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+body {
+  background: #07080d !important;
+}
